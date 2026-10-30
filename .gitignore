@@ -1,0 +1,28 @@
+# Godot 4+ specific ignores
+.godot/
+
+# Android build template
+/android/
+
+# keystore
+export_credentials.cfg
+
+# build
+*.apk
+/build/
+
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# OpenXR Vendors plugin
+/addons/godotopenxrvendors/
+/asset/
+
+# ffmpeg binary for clip recording (105 MB, too big for GitHub). See tools/README.txt
+/tools/ffmpeg.exe
+/tools/ffmpeg
+ffmpeg-*.log
