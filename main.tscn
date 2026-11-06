@@ -19,9 +19,6 @@
 [ext_resource type="Script" uid="uid://mn0ebf0iwpyo" path="res://scripts/xr_notes.gd" id="20_notes"]
 [ext_resource type="Script" uid="uid://b5nn35ofa5wxd" path="res://scripts/habitat_collision.gd" id="21_surf"]
 [ext_resource type="PackedScene" path="res://scenes/lunar_exterior.tscn" id="22_lunar"]
-[ext_resource type="PackedScene" path="res://assets/models/Base_Camp/base_camp.glb" id="23_camp"]
-[ext_resource type="PackedScene" path="res://assets/models/Base_Camp/base_camp_exterior.glb" id="24_campext"]
-[ext_resource type="Script" path="res://scripts/habitat_lights.gd" id="25_lights"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_grab"]
 radius = 0.08
@@ -500,7 +497,7 @@ shader_parameter/grid_size = 1.0
 size = Vector2(10.2, 10.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
-size = Vector3(10, 0.2, 10)
+size = Vector3(600, 0.2, 600)
 
 [sub_resource type="StandardMaterial3D" id="Mat_table"]
 albedo_color = Color(0.34, 0.29, 0.24, 1)
@@ -766,11 +763,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.014873862, 0.04375124)
 material_override = SubResource("ShaderMaterial_074og")
 mesh = SubResource("TextMesh_cegan")
 
-[node name="BaseCampExterior" parent="." instance=ExtResource("24_campext")]
-
-[node name="HabitatLights" type="Node3D" parent="."]
-script = ExtResource("25_lights")
-
 [node name="LunarExterior" parent="." instance=ExtResource("22_lunar")]
 
 [node name="Passthrough" type="Node" parent="." unique_id=1290157622]
@@ -805,9 +797,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.854, 0)
 
 [node name="Collision" type="CollisionShape3D" parent="LunarHabitat/FloorL3" unique_id=1446973457]
 shape = SubResource("ConcavePolygonShape3D_074og")
-
-[node name="BaseCamp" parent="LunarHabitat" instance=ExtResource("23_camp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.663, 0)
 
 [node name="SurfaceCollision" type="Node" parent="LunarHabitat" unique_id=121640256]
 script = ExtResource("21_surf")

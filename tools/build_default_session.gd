@@ -1,6 +1,6 @@
-## Writes the default session for the built-in base camp: every zone type at least once, the
-## noise sources of the machinery, and (on purpose) the NASA reference tower's two crew quarters
-## next to the air-revitalisation fans, so the app opens with a noise warning to review.
+## Writes the default session for the built-in habitat (the NASA reference tower): its rooms as zones,
+## its machinery as noise sources, and (on purpose) the two crew quarters next to the air-revitalisation
+## fans, so the app opens with a noise warning to review. Edit ZONES / SOURCES when the model changes.
 ##   Godot --headless --xr-mode off --path . res://tools/build_default_session.tscn --quit-after 900
 ## Output: user://sticky_notes/sessions/default_base_camp.json, copied to res://assets/sessions/.
 extends Node
@@ -9,7 +9,7 @@ const OUT := "res://assets/sessions/default_base_camp.json"
 
 # [name, floor y, type, x0, z0, x1, z1]
 const ZONES := [
-	# A core tower (NASA reference): L1 / L2 / L3
+	# NASA reference tower only (the base-camp blockout is a layout reference, not in the scene)
 	["Suitport airlock (core)", 0.0, "airlock", -3.2, -3.2, 0.0, 3.2],
 	["Workbench & geology (core)", 0.0, "workshop", 0.0, -3.2, 3.2, 3.2],
 	["Hygiene & UWMS (core)", 2.6, "hygiene", -3.2, -3.2, 0.0, 0.0],
@@ -20,33 +20,6 @@ const ZONES := [
 	["Crew quarters core 2", 5.2, "crew_quarters", -3.2, 0.2, -0.3, 3.2],
 	["Wardroom & galley (core)", 5.2, "galley", 0.3, -3.2, 3.2, 0.2],
 	["Medical (core)", 5.2, "medical", 0.3, 0.2, 3.2, 3.2],
-	# D hub and tunnels
-	["Node hub", 0.0, "corridor", -9.5, -2.0, -5.5, 2.0],
-	["Tunnel A-D", 0.0, "corridor", -5.5, -0.8, -3.3, 0.8],
-	["Tunnel D-C", 0.0, "corridor", -11.3, -0.8, -9.5, 0.8],
-	["Tunnel D-B", 0.0, "corridor", -8.3, -9.8, -6.7, -2.0],
-	# B engineering
-	["Dust vestibule & airlock", 0.0, "airlock", -1.7, -14.0, 0.5, -10.0],
-	["Suit maintenance", 0.0, "workshop", -3.9, -14.0, -1.7, -10.0],
-	["ECLSS bay", 0.0, "eclss", -10.5, -14.0, -3.9, -10.0],
-	["Power & thermal", 0.0, "power", -12.3, -14.0, -10.5, -10.0],
-	["Workshop", 0.0, "workshop", -14.1, -14.0, -12.3, -10.0],
-	["Logistics", 0.0, "logistics", -15.5, -14.0, -14.1, -10.0],
-	# C habitation deck 1
-	["Crew quarters A", 0.0, "crew_quarters", -14.6, 0.4, -11.5, 3.5],
-	["Crew quarters B", 0.0, "crew_quarters", -18.5, 0.4, -15.4, 3.5],
-	["Crew quarters C", 0.0, "crew_quarters", -18.5, -3.5, -15.4, -0.4],
-	["Crew quarters D", 0.0, "crew_quarters", -14.6, -3.5, -11.5, -0.4],
-	["Storm shelter", 0.0, "shelter", -16.7, -1.7, -13.3, 1.7],
-	["Hygiene A", 0.0, "hygiene", -12.6, -0.4, -11.4, 0.4],
-	["Hygiene B", 0.0, "hygiene", -18.6, -0.4, -17.2, 0.4],
-	["Stowage (C)", 0.0, "logistics", -15.4, 1.8, -14.6, 3.5],
-	["Toilet (C)", 0.0, "uwms", -15.4, -3.5, -14.6, -1.8],
-	# C habitation deck 2
-	["Wardroom & galley", 2.6, "galley", -18.5, -3.6, -11.5, -0.5],
-	["Medical", 2.6, "medical", -13.5, -0.5, -11.4, 1.5],
-	["Exercise", 2.6, "exercise", -18.6, -0.5, -16.3, 1.6],
-	["Greenhouse", 2.6, "greenhouse", -16.3, 1.6, -13.5, 3.6],
 ]
 
 # [name, preset, x, y, z, db (0 = preset)]
@@ -57,18 +30,6 @@ const SOURCES := [
 	["ARS fan 3 (core)", "fan", -0.2, 5.6, 0.25, 58],
 	["WPA pump 1 (core)", "pump", -1.2, 3.0, 1.2, 0],
 	["WPA pump 2 (core)", "pump", -1.8, 3.0, 0.6, 0],
-	["ECLSS fan 1", "fan", -4.5, 1.0, -13.4, 62],
-	["ECLSS fan 2", "fan", -5.3, 1.0, -13.4, 62],
-	["ECLSS pump 1", "pump", -6.1, 1.0, -13.4, 0],
-	["ECLSS pump 2", "pump", -6.9, 1.0, -13.4, 0],
-	["ECLSS fan 3", "fan", -7.7, 1.0, -13.4, 62],
-	["ECLSS pump 3", "pump", -8.5, 1.0, -13.4, 0],
-	["ECLSS fan 4", "fan", -9.3, 1.0, -13.4, 62],
-	["Thermal pump", "pump", -11.4, 0.6, -11.8, 0],
-	["Airlock compressor", "compressor", -0.6, 1.0, -13.5, 0],
-	["Workshop tools", "tools", -13.2, 1.0, -13.3, 0],
-	["Exercise device (C)", "exercise", -17.6, 3.3, 0.4, 0],
-	["Wardroom conversation", "talk", -15.0, 3.5, -1.6, 0],
 ]
 
 

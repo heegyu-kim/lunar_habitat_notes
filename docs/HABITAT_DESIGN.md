@@ -248,7 +248,9 @@ PC + Quest Link 제출로 확정됐으므로 데스크톱 GPU 기준.
 - 6일차 시각: Forward+ 전환, SSAO, `scripts/habitat_lights.gd`가 실별 조명을 두고 구역 색온도를 적용. 라이트맵 베이크는 에디터에서만 가능하므로 미실시.
 - 7일차 기본 세션: `tools/build_default_session.tscn` → `assets/sessions/default_base_camp.json` (구역 33, 소음원 17). 첫 실행 시 자동 로드되고 코어 침실 2개가 40 > 35 dB 로 경고.
 
-남은 것: Blender 디테일 모델링으로 blockout 교체, 라이트맵 베이크, C 모듈 사다리도 XRLadder 에 등록(현재는 코어 사다리만), 헤드셋에서 성능(72 Hz) 확인.
+(11/6 저녁) 품질 판단에 따라 **CSG blockout 과 코드 조명은 씬에서 뺐다.** 기본 씬은 NASA 참조 타워 + 외부 환경(하늘·지형·태양)만이고, 기본 세션도 타워의 방 10개와 소음원 5개로 줄였다. blockout glb 와 생성기는 배치 참고용으로 저장소에 남긴다. 디테일 모델링·재질·조명은 Blender 에서 만들어 `LunarHabitat` 아래에 넣는다(README "Putting your own habitat model in as the default"). 파이프라인(층·구역·소음·세션)은 그 모델에 그대로 동작한다.
+
+남은 것: Blender 모델 반입 후 기본 세션 표 갱신, 라이트맵 베이크, 사다리 위치가 여러 개인 모델에 대한 XRLadder 확장, 헤드셋 성능(72 Hz) 확인.
 
 | 일 | 작업 | 체크 |
 |---|---|---|

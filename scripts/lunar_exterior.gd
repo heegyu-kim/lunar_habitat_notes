@@ -10,7 +10,7 @@ extends Node3D
 @export_range(-180.0, 180.0) var sun_azimuth_deg := -35.0
 @export var sun_energy := 3.2
 ## Flat, fixed ambient so the inside stays readable until every room has its own lights.
-@export var ambient_energy := 0.30
+@export var ambient_energy := 0.65
 @export var terrain_size := 4000.0
 @export var flat_radius := 70.0
 
