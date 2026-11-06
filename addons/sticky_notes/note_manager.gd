@@ -15,11 +15,14 @@ signal identity_changed
 signal visibility_changed
 signal focus_changed(id: String)
 signal clip_ready(note_id: String)   # ffmpeg 변환이 끝나 재생 가능해졌을 때
+signal space_changed                 # 가져온 모델 / 층 / 구역 / 소음원이 바뀌었을 때
 
 const ROOT_DIR := "user://sticky_notes/"
 const SESSION_DIR := ROOT_DIR + "sessions/"
 const MEDIA_DIR := ROOT_DIR + "media/"
 const REPORT_DIR := ROOT_DIR + "reports/"
+const MODELS_DIR := ROOT_DIR + "models/"
+const SESSION_VERSION := 2
 const IDENTITY_FILE := ROOT_DIR + "identity.cfg"
 const RECORD_BUS := "Record"
 
@@ -45,11 +48,13 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(SESSION_DIR)
 	DirAccess.make_dir_recursive_absolute(MEDIA_DIR)
 	DirAccess.make_dir_recursive_absolute(REPORT_DIR)
+	DirAccess.make_dir_recursive_absolute(MODELS_DIR)
 	_load_identity()
 	_ensure_input_actions()
 	_setup_recorder()
 	_setup_microphone()
 	_setup_ffmpeg()
+	_restore_model.call_deferred()
 
 
 # =====================================================================
@@ -72,6 +77,8 @@ func _save_identity() -> void:
 	cfg.set_value("identity", "role", author_role)
 	cfg.set_value("audio", "mic_device", mic_device)
 	cfg.set_value("audio", "ffmpeg_device", ffmpeg_audio_device)
+	cfg.set_value("space", "model", space.get("model", {}))
+	cfg.set_value("space", "last_session", last_session)
 	cfg.save(IDENTITY_FILE)
 
 
@@ -83,6 +90,10 @@ func _load_identity() -> void:
 	author_role = int(cfg.get_value("identity", "role", author_role))
 	mic_device = str(cfg.get_value("audio", "mic_device", ""))
 	ffmpeg_audio_device = str(cfg.get_value("audio", "ffmpeg_device", ""))
+	var m: Variant = cfg.get_value("space", "model", {})
+	if m is Dictionary and str(m.get("file", "")) != "":
+		_pending_model = m
+	last_session = str(cfg.get_value("space", "last_session", ""))
 
 
 # =====================================================================
@@ -90,6 +101,7 @@ func _load_identity() -> void:
 # =====================================================================
 
 func add_note(note: NoteData) -> void:
+	note.zone_id = zone_id_at(note.position)
 	notes[note.id] = note
 	if not note.is_reply():
 		_spawn_instance(note)
@@ -1077,8 +1089,12 @@ func save_session(session_name: String) -> String:
 	list.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["created_at"] < b["created_at"])
 	var data := {
 		"format": "sticky_notes",
-		"version": 1,
+		"version": SESSION_VERSION,
 		"saved_at": Time.get_datetime_string_from_system(false, true),
+		"model": space.get("model", {}),
+		"floors": space.get("floors", []),
+		"zones": space.get("zones", []),
+		"noise_sources": space.get("noise_sources", []),
 		"notes": list,
 	}
 	var path := SESSION_DIR + _safe_name(session_name, "session_") + ".json"
@@ -1088,6 +1104,8 @@ func save_session(session_name: String) -> String:
 		return ""
 	f.store_string(JSON.stringify(data, "  "))
 	f.close()
+	last_session = path
+	_save_identity()
 	return path
 
 
@@ -1104,6 +1122,7 @@ func load_session(path: String, replace: bool = true) -> int:
 		return 0
 	if replace:
 		clear_all()
+		_apply_space_from_session(parsed)
 	var loaded: Array[NoteData] = []
 	for d in parsed["notes"]:
 		if d is Dictionary:
@@ -1113,8 +1132,12 @@ func load_session(path: String, replace: bool = true) -> int:
 		notes[n.id] = n
 		if not n.is_reply():
 			_spawn_instance(n)
+	_assign_zones()
 	_after_change()
 	notes_reloaded.emit()
+	if replace:
+		last_session = path
+		_save_identity()
 	return loaded.size()
 
 
@@ -1155,6 +1178,670 @@ func export_report(title: String) -> String:
 ## 세션 json + media + reports 폴더가 있는 곳을 OS 파일 탐색기로 연다.
 func open_data_folder() -> void:
 	OS.shell_open(ProjectSettings.globalize_path(ROOT_DIR))
+
+
+# =====================================================================
+#  공간 설정 (space setup): 가져온 모델 / 층 / 구역 / 소음원
+#  모델은 형상과 충돌만 제공한다. 층·구역·소음원은 세션 json에 산다.
+# =====================================================================
+
+## 세션에 저장되는 공간 데이터. 노트처럼 통째로 저장·로드된다.
+var space: Dictionary = {"model": {}, "floors": [], "zones": [], "noise_sources": []}
+## 씬 안의 기본 거주지 노드 이름. 모델을 가져오면 숨겨진다.
+var default_habitat_name: String = "LunarHabitat"
+var model_status: String = "built-in habitat"
+
+# preload 로 참조한다: 에디터가 class_name 캐시를 갱신하기 전에도(헤드리스 테스트) 동작하도록.
+const SpaceModelScript := preload("res://addons/sticky_notes/space/space_model.gd")
+const SpaceFloorsScript := preload("res://addons/sticky_notes/space/space_floors.gd")
+var _space_model: Node3D = null            # SpaceModel 인스턴스
+var _pending_model: Dictionary = {}       # identity.cfg에 기억된 마지막 모델. 씬이 준비되면 로드
+
+## 층별 바닥 마스크 (floor id -> {origin, cell, w, h, bits}). 세션에는 저장하지 않고 로드 때 다시 만든다.
+var floor_masks: Dictionary = {}
+var _up_faces: Dictionary = {}             # 현재 공간 루트의 상향 삼각형 (캐시)
+var _floor_bodies: Node3D = null           # 가져온 모델용 habitat_floor 충돌체
+var _floor_seq := 0
+
+
+## models 폴더에 있는 파일 이름들.
+func list_models() -> PackedStringArray:
+	var out := PackedStringArray()
+	for f in DirAccess.get_files_at(MODELS_DIR):
+		var ext := f.get_extension().to_lower()
+		if ext == "glb" or ext == "gltf":
+			out.append(f)
+	out.sort()
+	return out
+
+
+## 바깥 파일을 models 폴더로 복사한다. 돌아오는 값은 폴더 안의 파일 이름("" = 실패).
+## .gltf는 옆의 .bin과 텍스처를 참조할 수 있으므로 같은 폴더의 파일을 함께 복사한다.
+func import_model_file(src_path: String) -> String:
+	if not FileAccess.file_exists(src_path):
+		push_warning("StickyNotes: 모델 파일이 없습니다 %s" % src_path)
+		return ""
+	var name_ := src_path.get_file()
+	var err := DirAccess.copy_absolute(src_path, MODELS_DIR + name_)
+	if err != OK:
+		push_warning("StickyNotes: 모델 복사 실패 %s (%d)" % [src_path, err])
+		return ""
+	if src_path.get_extension().to_lower() == "gltf":
+		var dir := src_path.get_base_dir()
+		for f in DirAccess.get_files_at(dir):
+			var ext := f.get_extension().to_lower()
+			if ext in ["bin", "png", "jpg", "jpeg", "webp", "ktx2"]:
+				DirAccess.copy_absolute(dir.path_join(f), MODELS_DIR + f)
+	return name_
+
+
+## models 폴더의 파일을 씬에 올린다. 기본 거주지는 숨긴다.
+## opts: unit "m"|"cm"|"mm", up_axis "Y"|"Z", align_floor, center_xz, min_size
+func load_model(file: String, opts: Dictionary = {}) -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		push_warning("StickyNotes: 씬이 아직 없어 모델을 올릴 수 없습니다")
+		return false
+	if _space_model == null:
+		_space_model = SpaceModelScript.new()
+		_space_model.name = "SpaceModel"
+		scene.add_child(_space_model)
+	var ok: bool = _space_model.load_file(MODELS_DIR + file, opts)
+	if not ok:
+		model_status = "load failed: " + _space_model.error
+		push_warning("StickyNotes: 모델 로드 실패 %s: %s" % [file, _space_model.error])
+		space["model"] = {}
+		_set_default_habitat_visible(true)
+		space_changed.emit()
+		return false
+	space["model"] = _space_model.settings()
+	model_status = "%s  (%d meshes, %.1f × %.1f × %.1f m)" % [file, _space_model.mesh_count, _space_model.bounds.size.x, _space_model.bounds.size.y, _space_model.bounds.size.z]
+	_set_default_habitat_visible(false)
+	_save_identity()
+	# A different space: zones and noise sources of the previous one no longer mean anything
+	# (a session load puts its own back right after this).
+	space["zones"] = []
+	space["noise_sources"] = []
+	rebuild_floors(false)
+	space_changed.emit()
+	return true
+
+
+## 가져온 모델을 내리고 기본 거주지를 다시 보인다. 노트는 그대로 둔다.
+func unload_model() -> void:
+	if _space_model != null:
+		_space_model.unload()
+	var was_model := has_model() or not str(space.get("model", {}).get("file", "")).is_empty()
+	space["model"] = {}
+	model_status = "built-in habitat"
+	_set_default_habitat_visible(true)
+	_save_identity()
+	if was_model:
+		space["zones"] = []
+		space["noise_sources"] = []
+	rebuild_floors(false)
+	space_changed.emit()
+
+
+func has_model() -> bool:
+	return _space_model != null and _space_model.is_loaded()
+
+
+func model_bounds() -> AABB:
+	return _space_model.bounds if has_model() else AABB()
+
+
+## 기본 거주지를 보이거나 숨긴다. 숨길 때는 충돌도 끈다 (보이지 않는 벽에 노트가 붙지 않게).
+func _set_default_habitat_visible(on: bool) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var hab := scene.get_node_or_null(default_habitat_name)
+	if hab == null:
+		return
+	hab.visible = on
+	for b in hab.find_children("*", "StaticBody3D", true, false):
+		var body := b as StaticBody3D
+		if body == null:
+			continue
+		if not body.has_meta("sn_layer"):
+			body.set_meta("sn_layer", body.collision_layer)
+		body.collision_layer = int(body.get_meta("sn_layer")) if on else 0
+
+
+## 세션 파일의 model / floors / zones / noise_sources 를 적용한다 (replace 로드일 때만).
+func _apply_space_from_session(parsed: Dictionary) -> void:
+	var session_floors: Array = parsed.get("floors", []) if parsed.get("floors", []) is Array else []
+	var m: Variant = parsed.get("model", {})
+	if m is Dictionary and str(m.get("file", "")) != "":
+		var file := str(m["file"])
+		if FileAccess.file_exists(MODELS_DIR + file):
+			load_model(file, m)
+		else:
+			push_warning("StickyNotes: 세션이 참조하는 모델이 models 폴더에 없습니다: %s" % file)
+			unload_model()
+			model_status = "missing model: " + file
+			space_changed.emit()
+	else:
+		unload_model()
+	# 세션에 층이 있으면(이름·랜딩을 사람이 고쳤을 수 있다) 자동 인식 결과 대신 그것을 쓴다. 마스크만 다시 만든다.
+	if not session_floors.is_empty():
+		space["floors"] = session_floors
+		rebuild_floors(true)
+	# 구역과 소음원은 모델 로드가 끝난 뒤에 (load_model 이 이전 공간의 것을 비우므로).
+	space["zones"] = parsed.get("zones", []) if parsed.get("zones", []) is Array else []
+	space["noise_sources"] = parsed.get("noise_sources", []) if parsed.get("noise_sources", []) is Array else []
+	_assign_zones()
+	recompute_noise()
+	_refresh_zone_visuals()
+	space_changed.emit()
+
+
+## 앱 첫 실행 때 열리는 기본 세션 (기본 거주지의 구역·소음원). tools/build_default_session.tscn 이 만든다.
+const DEFAULT_SESSION := "res://assets/sessions/default_base_camp.json"
+var last_session: String = ""
+
+
+## 지난 실행의 세션(없으면 기본 세션)을 씬이 준비된 뒤 연다. 모델도 세션이 기억한다.
+func _restore_model() -> void:
+	await get_tree().process_frame
+	var m := _pending_model
+	_pending_model = {}
+	if last_session != "" and FileAccess.file_exists(last_session):
+		load_session(last_session, true)
+		return
+	var file := str(m.get("file", ""))
+	if file != "" and FileAccess.file_exists(MODELS_DIR + file):
+		load_model(file, m)
+	elif FileAccess.file_exists(DEFAULT_SESSION):
+		load_session(DEFAULT_SESSION, true)
+	else:
+		rebuild_floors(false)
+		space_changed.emit()
+
+
+# ---------------- 층 (floors) ----------------
+
+## 지금 공간의 루트: 가져온 모델이 있으면 그것, 없으면 기본 거주지.
+func space_root() -> Node3D:
+	if has_model():
+		return _space_model
+	var scene := get_tree().current_scene
+	if scene == null:
+		return null
+	return scene.get_node_or_null(default_habitat_name) as Node3D
+
+
+## 층을 다시 만든다. keep=true면 space.floors의 높이·이름·랜딩을 그대로 두고 마스크와 충돌체만 갱신,
+## false면 지오메트리에서 새로 찾는다.
+func rebuild_floors(keep: bool) -> void:
+	var root := space_root()
+	floor_masks.clear()
+	_clear_floor_bodies()
+	if root == null:
+		space["floors"] = []
+		return
+	var t0 := Time.get_ticks_msec()
+	_up_faces = SpaceFloorsScript.collect_up_faces(root)
+	if not keep or (space.get("floors", []) as Array).is_empty():
+		var old: Array = space.get("floors", [])
+		var floors: Array = []
+		var heights: PackedFloat32Array = SpaceFloorsScript.find_floor_heights(_up_faces)
+		for i in heights.size():
+			var fl := {"id": _new_floor_id(), "name": "L%d" % (i + 1), "y": heights[i], "landings": []}
+			# Re-detecting keeps the id, name and landing of a floor that is still there (zones point at ids).
+			for o in old:
+				if absf(float(o["y"]) - heights[i]) < 0.3:
+					fl["id"] = o["id"]
+					fl["name"] = o["name"]
+					fl["landings"] = o.get("landings", [])
+					break
+			floors.append(fl)
+		space["floors"] = floors
+	for fl in space["floors"]:
+		var y := float(fl["y"])
+		# Each floor's mask covers only that floor's own footprint (keeps far-away props cheap).
+		var area: Rect2 = SpaceFloorsScript.bounds_xz(_up_faces, 0.5, y)
+		var mask: Dictionary = SpaceFloorsScript.rasterize(_up_faces, y, area)
+		floor_masks[str(fl["id"])] = mask
+		if (fl.get("landings", []) as Array).is_empty():
+			var c: Vector3 = _default_landing(y, mask)
+			fl["landings"] = [[c.x, c.y, c.z]]
+	if has_model():
+		_build_floor_bodies()
+	print("StickyNotes|INFO: floors: %s  (%d ms)" % [", ".join(space["floors"].map(func(f: Dictionary) -> String: return "%s %.2f m" % [f["name"], float(f["y"])])), Time.get_ticks_msec() - t0])
+	_assign_zones()
+	recompute_noise()
+	_refresh_zone_visuals()
+
+
+func _new_floor_id() -> String:
+	_floor_seq += 1
+	return "f%d_%d" % [int(Time.get_unix_time_from_system()) % 100000, _floor_seq]
+
+
+## 기본 거주지는 사다리의 랜딩을 그대로 쓴다. 그 밖에는 마스크의 중심.
+func _default_landing(y: float, mask: Dictionary) -> Vector3:
+	if not has_model():
+		var scene := get_tree().current_scene
+		if scene != null:
+			for n in scene.find_children("XRLadder", "", true, false):
+				var lands: Variant = n.get("landings")
+				if lands is Array:
+					for l in lands:
+						if l is Vector3 and absf(l.y - y) < 0.5:
+							return Vector3(l.x, y, l.z)
+	return SpaceFloorsScript.mask_center(mask, y)
+
+
+func _clear_floor_bodies() -> void:
+	if _floor_bodies != null:
+		_floor_bodies.get_parent().remove_child(_floor_bodies)
+		_floor_bodies.queue_free()
+		_floor_bodies = null
+
+
+## 가져온 모델의 층마다 걸을 수 있는 StaticBody3D (habitat_floor 그룹). 기본 거주지는 씬에 이미 있다.
+func _build_floor_bodies() -> void:
+	_floor_bodies = Node3D.new()
+	_floor_bodies.name = "FloorBodies"
+	_space_model.add_child(_floor_bodies)
+	for fl in space["floors"]:
+		var shape: ConcavePolygonShape3D = SpaceFloorsScript.floor_shape(_up_faces, float(fl["y"]))
+		if shape == null:
+			continue
+		var body := StaticBody3D.new()
+		body.name = "Floor_" + str(fl["name"]).validate_node_name()
+		body.add_to_group("habitat_floor")
+		body.collision_mask = 0
+		var cs := CollisionShape3D.new()
+		cs.shape = shape
+		body.add_child(cs)
+		_floor_bodies.add_child(body)
+
+
+## 층을 y 오름차순으로.
+func floors_sorted() -> Array:
+	var out: Array = (space.get("floors", []) as Array).duplicate()
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["y"]) < float(b["y"]))
+	return out
+
+
+## 층마다 첫 랜딩 지점 (y 오름차순). 사다리와 미니맵 텔레포트가 쓴다.
+func floor_landings() -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	for fl in floors_sorted():
+		var lands: Array = fl.get("landings", [])
+		if lands.is_empty():
+			out.append(Vector3(0.0, float(fl["y"]), 0.0))
+		else:
+			var l: Array = lands[0]
+			out.append(Vector3(float(l[0]), float(l[1]), float(l[2])))
+	return out
+
+
+## 높이 y에 가장 가까운 층의 index (floors_sorted 기준). 층이 없으면 -1.
+func floor_index_at(y: float) -> int:
+	var fs := floors_sorted()
+	var best := -1
+	var best_d := INF
+	for i in fs.size():
+		var d := absf(float(fs[i]["y"]) - y)
+		if d < best_d:
+			best_d = d
+			best = i
+	return best
+
+
+func floor_by_id(id: String) -> Dictionary:
+	for fl in space.get("floors", []):
+		if str(fl["id"]) == id:
+			return fl
+	return {}
+
+
+func add_floor(y: float, name_: String = "") -> Dictionary:
+	var fl := {"id": _new_floor_id(), "name": name_ if name_ != "" else "L%d" % ((space["floors"] as Array).size() + 1), "y": y, "landings": []}
+	space["floors"].append(fl)
+	rebuild_floors(true)
+	space_changed.emit()
+	return fl
+
+
+func remove_floor(id: String) -> void:
+	var fs: Array = space["floors"]
+	for i in fs.size():
+		if str(fs[i]["id"]) == id:
+			fs.remove_at(i)
+			break
+	rebuild_floors(true)
+	space_changed.emit()
+
+
+func rename_floor(id: String, name_: String) -> void:
+	var fl := floor_by_id(id)
+	if fl.is_empty() or name_.strip_edges() == "":
+		return
+	fl["name"] = name_.strip_edges()
+	space_changed.emit()
+
+
+## 그 층의 랜딩(텔레포트 도착점)을 world 좌표 p로 바꾼다.
+func set_floor_landing(id: String, p: Vector3) -> void:
+	var fl := floor_by_id(id)
+	if fl.is_empty():
+		return
+	fl["landings"] = [[p.x, float(fl["y"]), p.z]]
+	space_changed.emit()
+
+
+## 높이 y에 선 사람이 있는 층: y + 0.3 보다 낮은 층 중 가장 높은 것 (floors_sorted index). 층이 없으면 -1.
+func floor_index_below(y: float) -> int:
+	var fs := floors_sorted()
+	var best := -1
+	for i in fs.size():
+		if float(fs[i]["y"]) <= y + 0.3:
+			best = i
+	if best == -1 and not fs.is_empty():
+		best = 0
+	return best
+
+
+# ---------------- 구역 (zones) ----------------
+
+const SpacePresetsScript := preload("res://addons/sticky_notes/space/space_presets.gd")
+const ZoneVisualsScript := preload("res://addons/sticky_notes/space/zone_visuals.gd")
+var zones_visible := true
+var _zone_visuals: Node3D = null
+var _zone_seq := 0
+
+
+func _new_zone_id() -> String:
+	_zone_seq += 1
+	return "z%d_%d" % [int(Time.get_unix_time_from_system()) % 100000, _zone_seq]
+
+
+## 층 위에 사각형 구역을 만든다. rect 는 (x, z) 평면. 유형 프리셋에서 성격·허용 dB·색온도를 채운다.
+func add_zone(floor_id: String, rect: Rect2, type_key: String, name_: String = "") -> Dictionary:
+	var preset: Dictionary = SpacePresetsScript.zone_type(type_key)
+	if not SpacePresetsScript.ZONE_TYPES.has(type_key):
+		type_key = "other"
+	var r := rect.abs()
+	var count := 1
+	for z in space["zones"]:
+		if str(z["type"]) == type_key:
+			count += 1
+	var zone := {
+		"id": _new_zone_id(),
+		"name": name_.strip_edges() if name_.strip_edges() != "" else "%s %d" % [str(preset["name"]), count],
+		"floor": floor_id,
+		"type": type_key,
+		"rect": [r.position.x, r.position.y, r.end.x, r.end.y],
+		"noise_limit_db": int(preset["noise_limit_db"]),
+		"quiet": float(preset["quiet"]),
+		"clean": float(preset["clean"]),
+		"private": float(preset["private"]),
+		"color_temp_k": int(preset["color_temp_k"]),
+		"note": "",
+	}
+	space["zones"].append(zone)
+	_zones_changed()
+	return zone
+
+
+## 필드를 바꾼다. type 을 바꾸면 성격·허용 dB·색온도를 새 프리셋 값으로 다시 채운다.
+func update_zone(id: String, changes: Dictionary) -> void:
+	var z := zone_by_id(id)
+	if z.is_empty():
+		return
+	if changes.has("type") and str(changes["type"]) != str(z["type"]):
+		var preset: Dictionary = SpacePresetsScript.zone_type(str(changes["type"]))
+		z["noise_limit_db"] = int(preset["noise_limit_db"])
+		z["quiet"] = float(preset["quiet"])
+		z["clean"] = float(preset["clean"])
+		z["private"] = float(preset["private"])
+		z["color_temp_k"] = int(preset["color_temp_k"])
+	for k in changes:
+		z[k] = changes[k]
+	_zones_changed()
+
+
+func remove_zone(id: String) -> void:
+	var zs: Array = space["zones"]
+	for i in zs.size():
+		if str(zs[i]["id"]) == id:
+			zs.remove_at(i)
+			break
+	_zones_changed()
+
+
+func zone_by_id(id: String) -> Dictionary:
+	for z in space.get("zones", []):
+		if str(z["id"]) == id:
+			return z
+	return {}
+
+
+## 층 높이, 이름 순.
+func zones_sorted() -> Array:
+	var out: Array = (space.get("zones", []) as Array).duplicate()
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var fa := floor_by_id(str(a["floor"]))
+		var fb := floor_by_id(str(b["floor"]))
+		var ya := float(fa.get("y", 0.0))
+		var yb := float(fb.get("y", 0.0))
+		if absf(ya - yb) > 0.01:
+			return ya < yb
+		return str(a["name"]) < str(b["name"]))
+	return out
+
+
+func zones_on_floor(floor_id: String) -> Array:
+	return zones_sorted().filter(func(z: Dictionary) -> bool: return str(z["floor"]) == floor_id)
+
+
+func zone_rect(z: Dictionary) -> Rect2:
+	var r: Array = z["rect"]
+	return Rect2(float(r[0]), float(r[1]), float(r[2]) - float(r[0]), float(r[3]) - float(r[1]))
+
+
+## 월드 점이 들어 있는 구역. 층은 "그 높이에 선 사람의 층"으로 고른다. 없으면 {}.
+func zone_at(p: Vector3) -> Dictionary:
+	var fi := floor_index_below(p.y)
+	if fi < 0:
+		return {}
+	var fid := str(floors_sorted()[fi]["id"])
+	for z in space.get("zones", []):
+		if str(z["floor"]) == fid and zone_rect(z).has_point(Vector2(p.x, p.z)):
+			return z
+	return {}
+
+
+func zone_id_at(p: Vector3) -> String:
+	return str(zone_at(p).get("id", ""))
+
+
+## 구역 중심의 바닥 점 (텔레포트 목적지).
+func zone_center(z: Dictionary) -> Vector3:
+	var fl := floor_by_id(str(z["floor"]))
+	var c := zone_rect(z).get_center()
+	return Vector3(c.x, float(fl.get("y", 0.0)), c.y)
+
+
+## 구역별 (원 노트) 개수. "" 키는 구역 밖.
+func zone_note_counts() -> Dictionary:
+	var out: Dictionary = {}
+	for n in top_level_notes():
+		out[n.zone_id] = out.get(n.zone_id, 0) + 1
+	return out
+
+
+func set_zones_visible(on: bool) -> void:
+	zones_visible = on
+	_refresh_zone_visuals()
+
+
+## 모든 노트의 zone_id 를 위치로 다시 계산한다.
+func _assign_zones() -> void:
+	for n in notes.values():
+		n.zone_id = zone_id_at(n.position)
+
+
+func _zones_changed() -> void:
+	_assign_zones()
+	recompute_noise()
+	_refresh_zone_visuals()
+	space_changed.emit()
+
+
+# ---------------- 소음원 (noise sources) ----------------
+# 단순 규칙 모델이다 (음향 시뮬레이션이 아니다): 거리 감쇠 20·log10(r), 구역 경계마다 -15 dB,
+# 층이 다르면 -25 dB, 같은 구역 안은 거리 감쇠만. 소스들은 에너지 합.
+
+const NOISE_WALL_DB := 15.0
+const NOISE_FLOOR_DB := 25.0
+const NOISE_RECEIVER_HEIGHT := 1.2
+var _noise_seq := 0
+
+
+func _new_noise_id() -> String:
+	_noise_seq += 1
+	return "n%d_%d" % [int(Time.get_unix_time_from_system()) % 100000, _noise_seq]
+
+
+func add_noise_source(preset: String, position: Vector3, name_: String = "", db_at_1m: float = -1.0) -> Dictionary:
+	var p: Dictionary = SpacePresetsScript.noise_type(preset)
+	if not SpacePresetsScript.NOISE_TYPES.has(preset):
+		preset = "other"
+	var count := 1
+	for s in space["noise_sources"]:
+		if str(s["preset"]) == preset:
+			count += 1
+	var src := {
+		"id": _new_noise_id(),
+		"name": name_.strip_edges() if name_.strip_edges() != "" else "%s %d" % [str(p["name"]).split(" (")[0], count],
+		"preset": preset,
+		"db_at_1m": db_at_1m if db_at_1m > 0.0 else float(p["db"]),
+		"position": [position.x, position.y, position.z],
+		"duty": "always",
+	}
+	space["noise_sources"].append(src)
+	_zones_changed()
+	return src
+
+
+func update_noise_source(id: String, changes: Dictionary) -> void:
+	var s := noise_source_by_id(id)
+	if s.is_empty():
+		return
+	for k in changes:
+		if k == "position" and changes[k] is Vector3:
+			var v: Vector3 = changes[k]
+			s[k] = [v.x, v.y, v.z]
+		else:
+			s[k] = changes[k]
+	_zones_changed()
+
+
+func remove_noise_source(id: String) -> void:
+	var ss: Array = space["noise_sources"]
+	for i in ss.size():
+		if str(ss[i]["id"]) == id:
+			ss.remove_at(i)
+			break
+	_zones_changed()
+
+
+func noise_source_by_id(id: String) -> Dictionary:
+	for s in space.get("noise_sources", []):
+		if str(s["id"]) == id:
+			return s
+	return {}
+
+
+func noise_sources_sorted() -> Array:
+	var out: Array = (space.get("noise_sources", []) as Array).duplicate()
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["name"]) < str(b["name"]))
+	return out
+
+
+func noise_source_position(s: Dictionary) -> Vector3:
+	var p: Array = s["position"]
+	return Vector3(float(p[0]), float(p[1]), float(p[2]))
+
+
+## 한 소스가 한 점(수신 위치)에서 내는 dB.
+func noise_at(s: Dictionary, receiver: Vector3, receiver_zone_id: String) -> float:
+	var src_pos := noise_source_position(s)
+	var r := maxf(src_pos.distance_to(receiver), 1.0)
+	var level := float(s["db_at_1m"]) - 20.0 * log(r) / log(10.0)
+	var src_zone := zone_id_at(src_pos)
+	if src_zone == receiver_zone_id and receiver_zone_id != "":
+		return level
+	var src_floor := floor_index_below(src_pos.y)
+	var rcv_floor := floor_index_below(receiver.y)
+	if src_floor != rcv_floor:
+		level -= NOISE_FLOOR_DB
+	if src_zone != "":
+		level -= NOISE_WALL_DB          # leaving the source's room
+	if receiver_zone_id != "":
+		level -= NOISE_WALL_DB          # entering the receiver's room
+	return level
+
+
+## 모든 구역의 noise_db / noise_over 를 다시 계산한다.
+func recompute_noise() -> void:
+	var sources: Array = space.get("noise_sources", [])
+	for z in space.get("zones", []):
+		var zid := str(z["id"])
+		var rcv := zone_center(z) + Vector3(0.0, NOISE_RECEIVER_HEIGHT, 0.0)
+		var energy := 0.0
+		for s in sources:
+			var l := noise_at(s, rcv, zid)
+			energy += pow(10.0, l / 10.0)
+		var db := 10.0 * log(energy) / log(10.0) if energy > 0.0 else 0.0
+		z["noise_db"] = roundf(db)
+		z["noise_over"] = db > float(z["noise_limit_db"]) + 0.5
+
+
+## "Crew quarters A 48 > 35 dB" 같은 경고 문자열들.
+func noise_warnings() -> Array[String]:
+	var out: Array[String] = []
+	for z in zones_sorted():
+		if bool(z.get("noise_over", false)):
+			out.append("%s %d > %d dB" % [str(z["name"]), int(z.get("noise_db", 0)), int(z["noise_limit_db"])])
+	return out
+
+
+func _refresh_zone_visuals() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	if _zone_visuals == null:
+		_zone_visuals = ZoneVisualsScript.new()
+		_zone_visuals.name = "ZoneVisuals"
+		scene.add_child(_zone_visuals)
+	_zone_visuals.visible = zones_visible
+	_zone_visuals.rebuild(zones_sorted(), self)
+	for n in get_tree().get_nodes_in_group("habitat_lights"):
+		if n.has_method("apply_zone_tints"):
+			n.apply_zone_tints(self)
+
+
+## 지금 사용자의 발 위치 (데스크톱 플레이어 또는 XR 머리 아래).
+func observer_feet() -> Vector3:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return Vector3.ZERO
+	var player := scene.get_node_or_null("DesktopPlayer") as Node3D
+	if player != null:
+		return player.global_position
+	var origin := scene.get_node_or_null("XROrigin3D") as XROrigin3D
+	if origin != null:
+		var cam := origin.get_node_or_null("XRCamera3D") as Node3D
+		var head := cam.global_position if cam != null else origin.global_position
+		return Vector3(head.x, origin.global_position.y, head.z)
+	return Vector3.ZERO
 
 
 # =====================================================================

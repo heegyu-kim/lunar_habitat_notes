@@ -1,0 +1,913 @@
+{
+  "floors": [
+    {
+      "id": "f72903_1",
+      "landings": [
+        [
+          0.0,
+          -0.0157583560794592,
+          0.0
+        ]
+      ],
+      "name": "L1",
+      "y": -0.0157583560794592
+    },
+    {
+      "id": "f72903_2",
+      "landings": [
+        [
+          0.0,
+          2.584881067276,
+          1.29999995231628
+        ]
+      ],
+      "name": "L2",
+      "y": 2.584881067276
+    },
+    {
+      "id": "f72903_3",
+      "landings": [
+        [
+          -0.699999988079071,
+          5.19650363922119,
+          0.449999988079071
+        ]
+      ],
+      "name": "L3",
+      "y": 5.19650363922119
+    }
+  ],
+  "format": "sticky_notes",
+  "model": {},
+  "noise_sources": [
+    {
+      "db_at_1m": 58.0,
+      "duty": "always",
+      "id": "n72960_1",
+      "name": "ARS fan 1 (core)",
+      "position": [
+        0.0,
+        5.59999990463257,
+        0.0
+      ],
+      "preset": "fan"
+    },
+    {
+      "db_at_1m": 58.0,
+      "duty": "always",
+      "id": "n72961_2",
+      "name": "ARS fan 2 (core)",
+      "position": [
+        0.200000002980232,
+        5.59999990463257,
+        -0.25
+      ],
+      "preset": "fan"
+    },
+    {
+      "db_at_1m": 58.0,
+      "duty": "always",
+      "id": "n72961_3",
+      "name": "ARS fan 3 (core)",
+      "position": [
+        -0.200000002980232,
+        5.59999990463257,
+        0.25
+      ],
+      "preset": "fan"
+    },
+    {
+      "db_at_1m": 65.0,
+      "duty": "always",
+      "id": "n72961_4",
+      "name": "WPA pump 1 (core)",
+      "position": [
+        -1.20000004768372,
+        3.0,
+        1.20000004768372
+      ],
+      "preset": "pump"
+    },
+    {
+      "db_at_1m": 65.0,
+      "duty": "always",
+      "id": "n72961_5",
+      "name": "WPA pump 2 (core)",
+      "position": [
+        -1.79999995231628,
+        3.0,
+        0.600000023841858
+      ],
+      "preset": "pump"
+    },
+    {
+      "db_at_1m": 62.0,
+      "duty": "always",
+      "id": "n72961_6",
+      "name": "ECLSS fan 1",
+      "position": [
+        -4.5,
+        1.0,
+        -13.3999996185303
+      ],
+      "preset": "fan"
+    },
+    {
+      "db_at_1m": 62.0,
+      "duty": "always",
+      "id": "n72961_7",
+      "name": "ECLSS fan 2",
+      "position": [
+        -5.30000019073486,
+        1.0,
+        -13.3999996185303
+      ],
+      "preset": "fan"
+    },
+    {
+      "db_at_1m": 65.0,
+      "duty": "always",
+      "id": "n72961_8",
+      "name": "ECLSS pump 1",
+      "position": [
+        -6.09999990463257,
+        1.0,
+        -13.3999996185303
+      ],
+      "preset": "pump"
+    },
+    {
+      "db_at_1m": 65.0,
+      "duty": "always",
+      "id": "n72961_9",
+      "name": "ECLSS pump 2",
+      "position": [
+        -6.90000009536743,
+        1.0,
+        -13.3999996185303
+      ],
+      "preset": "pump"
+    },
+    {
+      "db_at_1m": 62.0,
+      "duty": "always",
+      "id": "n72961_10",
+      "name": "ECLSS fan 3",
+      "position": [
+        -7.69999980926514,
+        1.0,
+        -13.3999996185303
+      ],
+      "preset": "fan"
+    },
+    {
+      "db_at_1m": 65.0,
+      "duty": "always",
+      "id": "n72961_11",
+      "name": "ECLSS pump 3",
+      "position": [
+        -8.5,
+        1.0,
+        -13.3999996185303
+      ],
+      "preset": "pump"
+    },
+    {
+      "db_at_1m": 62.0,
+      "duty": "always",
+      "id": "n72961_12",
+      "name": "ECLSS fan 4",
+      "position": [
+        -9.30000019073486,
+        1.0,
+        -13.3999996185303
+      ],
+      "preset": "fan"
+    },
+    {
+      "db_at_1m": 65.0,
+      "duty": "always",
+      "id": "n72961_13",
+      "name": "Thermal pump",
+      "position": [
+        -11.3999996185303,
+        0.600000023841858,
+        -11.8000001907349
+      ],
+      "preset": "pump"
+    },
+    {
+      "db_at_1m": 75.0,
+      "duty": "always",
+      "id": "n72961_14",
+      "name": "Airlock compressor",
+      "position": [
+        -0.600000023841858,
+        1.0,
+        -13.5
+      ],
+      "preset": "compressor"
+    },
+    {
+      "db_at_1m": 80.0,
+      "duty": "always",
+      "id": "n72962_15",
+      "name": "Workshop tools",
+      "position": [
+        -13.1999998092651,
+        1.0,
+        -13.3000001907349
+      ],
+      "preset": "tools"
+    },
+    {
+      "db_at_1m": 70.0,
+      "duty": "always",
+      "id": "n72962_16",
+      "name": "Exercise device (C)",
+      "position": [
+        -17.6000003814697,
+        3.29999995231628,
+        0.400000005960464
+      ],
+      "preset": "exercise"
+    },
+    {
+      "db_at_1m": 60.0,
+      "duty": "always",
+      "id": "n72962_17",
+      "name": "Wardroom conversation",
+      "position": [
+        -15.0,
+        3.5,
+        -1.60000002384186
+      ],
+      "preset": "talk"
+    }
+  ],
+  "notes": [],
+  "saved_at": "2026-11-06 08:49:22",
+  "version": 2,
+  "zones": [
+    {
+      "clean": 0.1,
+      "color_temp_k": 5000,
+      "floor": "f72903_1",
+      "id": "z72959_1",
+      "name": "Suitport airlock (core)",
+      "noise_db": 28.0,
+      "noise_limit_db": 80,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.1,
+      "rect": [
+        -3.20000004768372,
+        -3.20000004768372,
+        0.0,
+        3.20000004768372
+      ],
+      "type": "airlock"
+    },
+    {
+      "clean": 0.2,
+      "color_temp_k": 4500,
+      "floor": "f72903_1",
+      "id": "z72959_2",
+      "name": "Workbench & geology (core)",
+      "noise_db": 27.0,
+      "noise_limit_db": 85,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.2,
+      "rect": [
+        0.0,
+        -3.20000004768372,
+        3.20000004768372,
+        3.20000004768372
+      ],
+      "type": "workshop"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3500,
+      "floor": "f72903_2",
+      "id": "z72959_3",
+      "name": "Hygiene & UWMS (core)",
+      "noise_db": 30.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.6,
+      "rect": [
+        -3.20000004768372,
+        -3.20000004768372,
+        0.0,
+        0.0
+      ],
+      "type": "hygiene"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 4500,
+      "floor": "f72903_2",
+      "id": "z72959_4",
+      "name": "Exercise (core)",
+      "noise_db": 26.0,
+      "noise_limit_db": 75,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.1,
+      "rect": [
+        0.0,
+        -3.20000004768372,
+        3.20000004768372,
+        0.0
+      ],
+      "type": "exercise"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 4500,
+      "floor": "f72903_2",
+      "id": "z72959_5",
+      "name": "Biology lab (core)",
+      "noise_db": 28.0,
+      "noise_limit_db": 60,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.5,
+      "rect": [
+        0.0,
+        0.0,
+        3.20000004768372,
+        3.20000004768372
+      ],
+      "type": "lab"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 5000,
+      "floor": "f72903_2",
+      "id": "z72959_6",
+      "name": "Water processing (core)",
+      "noise_db": 67.0,
+      "noise_limit_db": 80,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.1,
+      "rect": [
+        -3.20000004768372,
+        0.0,
+        0.0,
+        3.20000004768372
+      ],
+      "type": "eclss"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_3",
+      "id": "z72959_7",
+      "name": "Crew quarters core 1",
+      "noise_db": 40.0,
+      "noise_limit_db": 35,
+      "noise_over": true,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        -3.20000004768372,
+        -3.20000004768372,
+        -0.299999952316284,
+        -0.200000047683716
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_3",
+      "id": "z72959_8",
+      "name": "Crew quarters core 2",
+      "noise_db": 40.0,
+      "noise_limit_db": 35,
+      "noise_over": true,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        -3.20000004768372,
+        0.200000002980232,
+        -0.299999952316284,
+        3.20000004768372
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_3",
+      "id": "z72959_9",
+      "name": "Wardroom & galley (core)",
+      "noise_db": 40.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        0.300000011920929,
+        -3.20000004768372,
+        3.20000004768372,
+        0.200000047683716
+      ],
+      "type": "galley"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 4500,
+      "floor": "f72903_3",
+      "id": "z72959_10",
+      "name": "Medical (core)",
+      "noise_db": 40.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.6,
+      "quiet": 0.8,
+      "rect": [
+        0.300000011920929,
+        0.200000002980232,
+        3.20000004768372,
+        3.20000004768372
+      ],
+      "type": "medical"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 4000,
+      "floor": "f72903_1",
+      "id": "z72959_11",
+      "name": "Node hub",
+      "noise_db": 29.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -9.5,
+        -2.0,
+        -5.5,
+        2.0
+      ],
+      "type": "corridor"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 4000,
+      "floor": "f72903_1",
+      "id": "z72959_12",
+      "name": "Tunnel A-D",
+      "noise_db": 28.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -5.5,
+        -0.800000011920929,
+        -3.29999995231628,
+        0.800000011920929
+      ],
+      "type": "corridor"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 4000,
+      "floor": "f72903_1",
+      "id": "z72959_13",
+      "name": "Tunnel D-C",
+      "noise_db": 29.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -11.3000001907349,
+        -0.800000011920929,
+        -9.5,
+        0.800000011920929
+      ],
+      "type": "corridor"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 4000,
+      "floor": "f72903_1",
+      "id": "z72959_14",
+      "name": "Tunnel D-B",
+      "noise_db": 33.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -8.30000019073486,
+        -9.80000019073486,
+        -6.70000028610229,
+        -2.0
+      ],
+      "type": "corridor"
+    },
+    {
+      "clean": 0.1,
+      "color_temp_k": 5000,
+      "floor": "f72903_1",
+      "id": "z72959_15",
+      "name": "Dust vestibule & airlock",
+      "noise_db": 71.0,
+      "noise_limit_db": 80,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.1,
+      "rect": [
+        -1.70000004768372,
+        -14.0,
+        0.5,
+        -10.0
+      ],
+      "type": "airlock"
+    },
+    {
+      "clean": 0.2,
+      "color_temp_k": 4500,
+      "floor": "f72903_1",
+      "id": "z72960_16",
+      "name": "Suit maintenance",
+      "noise_db": 38.0,
+      "noise_limit_db": 85,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.2,
+      "rect": [
+        -3.90000009536743,
+        -14.0,
+        -1.70000004768372,
+        -10.0
+      ],
+      "type": "workshop"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 5000,
+      "floor": "f72903_1",
+      "id": "z72960_17",
+      "name": "ECLSS bay",
+      "noise_db": 67.0,
+      "noise_limit_db": 80,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.1,
+      "rect": [
+        -10.5,
+        -14.0,
+        -3.90000009536743,
+        -10.0
+      ],
+      "type": "eclss"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 5000,
+      "floor": "f72903_1",
+      "id": "z72960_18",
+      "name": "Power & thermal",
+      "noise_db": 65.0,
+      "noise_limit_db": 80,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.1,
+      "rect": [
+        -12.3000001907349,
+        -14.0,
+        -10.5,
+        -10.0
+      ],
+      "type": "power"
+    },
+    {
+      "clean": 0.2,
+      "color_temp_k": 4500,
+      "floor": "f72903_1",
+      "id": "z72960_19",
+      "name": "Workshop",
+      "noise_db": 78.0,
+      "noise_limit_db": 85,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.2,
+      "rect": [
+        -14.1000003814697,
+        -14.0,
+        -12.3000001907349,
+        -10.0
+      ],
+      "type": "workshop"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 4000,
+      "floor": "f72903_1",
+      "id": "z72960_20",
+      "name": "Logistics",
+      "noise_db": 44.0,
+      "noise_limit_db": 55,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -15.5,
+        -14.0,
+        -14.1000003814697,
+        -10.0
+      ],
+      "type": "logistics"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_1",
+      "id": "z72960_21",
+      "name": "Crew quarters A",
+      "noise_db": 28.0,
+      "noise_limit_db": 35,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        -14.6000003814697,
+        0.400000005960464,
+        -11.5,
+        3.5
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_1",
+      "id": "z72960_22",
+      "name": "Crew quarters B",
+      "noise_db": 27.0,
+      "noise_limit_db": 35,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        -18.5,
+        0.400000005960464,
+        -15.3999996185303,
+        3.5
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_1",
+      "id": "z72960_23",
+      "name": "Crew quarters C",
+      "noise_db": 29.0,
+      "noise_limit_db": 35,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        -18.5,
+        -3.5,
+        -15.3999996185303,
+        -0.400000095367432
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_1",
+      "id": "z72960_24",
+      "name": "Crew quarters D",
+      "noise_db": 30.0,
+      "noise_limit_db": 35,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        -14.6000003814697,
+        -3.5,
+        -11.5,
+        -0.400000095367432
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 3500,
+      "floor": "f72903_1",
+      "id": "z72960_25",
+      "name": "Storm shelter",
+      "noise_db": 29.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.3,
+      "quiet": 0.8,
+      "rect": [
+        -16.7000007629395,
+        -1.70000004768372,
+        -13.3000011444092,
+        1.70000004768372
+      ],
+      "type": "shelter"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3500,
+      "floor": "f72903_1",
+      "id": "z72960_26",
+      "name": "Hygiene A",
+      "noise_db": 29.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.6,
+      "rect": [
+        -12.6000003814697,
+        -0.400000005960464,
+        -11.4000005722046,
+        0.400000005960464
+      ],
+      "type": "hygiene"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3500,
+      "floor": "f72903_1",
+      "id": "z72960_27",
+      "name": "Hygiene B",
+      "noise_db": 28.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.6,
+      "rect": [
+        -18.6000003814697,
+        -0.400000005960464,
+        -17.2000007629395,
+        0.400000005960464
+      ],
+      "type": "hygiene"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 4000,
+      "floor": "f72903_1",
+      "id": "z72960_28",
+      "name": "Stowage (C)",
+      "noise_db": 27.0,
+      "noise_limit_db": 55,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -15.3999996185303,
+        1.79999995231628,
+        -14.5999994277954,
+        3.5
+      ],
+      "type": "logistics"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3500,
+      "floor": "f72903_1",
+      "id": "z72960_29",
+      "name": "Toilet (C)",
+      "noise_db": 30.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.6,
+      "rect": [
+        -15.3999996185303,
+        -3.5,
+        -14.5999994277954,
+        -1.79999995231628
+      ],
+      "type": "uwms"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f72903_2",
+      "id": "z72960_30",
+      "name": "Wardroom & galley",
+      "noise_db": 60.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -18.5,
+        -3.59999990463257,
+        -11.5,
+        -0.5
+      ],
+      "type": "galley"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 4500,
+      "floor": "f72903_2",
+      "id": "z72960_31",
+      "name": "Medical",
+      "noise_db": 27.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.6,
+      "quiet": 0.8,
+      "rect": [
+        -13.5,
+        -0.5,
+        -11.3999996185303,
+        1.5
+      ],
+      "type": "medical"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 4500,
+      "floor": "f72903_2",
+      "id": "z72960_32",
+      "name": "Exercise",
+      "noise_db": 70.0,
+      "noise_limit_db": 75,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.1,
+      "rect": [
+        -18.6000003814697,
+        -0.5,
+        -16.3000011444092,
+        1.59999990463257
+      ],
+      "type": "exercise"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 5500,
+      "floor": "f72903_2",
+      "id": "z72960_33",
+      "name": "Greenhouse",
+      "noise_db": 30.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.8,
+      "rect": [
+        -16.2999992370605,
+        1.60000002384186,
+        -13.4999990463257,
+        3.59999990463257
+      ],
+      "type": "greenhouse"
+    }
+  ]
+}

@@ -34,6 +34,7 @@ var resolved: bool = false
 var position: Vector3 = Vector3.ZERO        # 노트가 붙은 월드 좌표
 var normal: Vector3 = Vector3.UP            # 붙은 표면의 법선 (노트가 서는 방향)
 var anchor_name: String = ""                # 붙은 오브젝트 이름 (예: Hatch, Rack_A)
+var zone_id: String = ""                    # 위치로 계산한 구역 (space.zones). 비어 있으면 구역 밖
 var camera_position: Vector3 = Vector3.ZERO # 작성 당시 눈 위치 (텔레포트용)
 var camera_rotation: Vector3 = Vector3.ZERO # 작성 당시 시선 (오일러, 라디안)
 
@@ -139,6 +140,7 @@ func to_dict() -> Dictionary:
 		"audio_file": audio_file,
 		"clip_file": clip_file,
 		"created_at": created_at,
+		"zone_id": zone_id,
 	}
 
 
@@ -160,6 +162,7 @@ static func from_dict(d: Dictionary) -> NoteData:
 	n.audio_file = str(d.get("audio_file", ""))
 	n.clip_file = str(d.get("clip_file", ""))
 	n.created_at = str(d.get("created_at", ""))
+	n.zone_id = str(d.get("zone_id", ""))
 	if n.id == "":
 		n.id = NoteData.make_new().id
 	return n

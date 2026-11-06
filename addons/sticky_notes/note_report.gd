@@ -73,6 +73,17 @@ static func build(title: String) -> String:
 	var conflicts := NoteManager.conflict_anchors()
 	if not conflicts.is_empty():
 		h.append("<div class=\"conflict\"><b>Open conflicts</b> · a constraint and a proposal sit on the same part: %s</div>" % _esc(", ".join(conflicts)))
+	var noise: Array[String] = NoteManager.noise_warnings()
+	if not noise.is_empty():
+		h.append("<div class=\"conflict\"><b>Zones over their noise limit</b> · estimated with a simple rule (distance loss, −15 dB per wall, −25 dB per floor), not an acoustic simulation: %s</div>" % _esc(" · ".join(noise)))
+	var zones: Array = NoteManager.zones_sorted()
+	if not zones.is_empty():
+		var zone_counts: Dictionary = NoteManager.zone_note_counts()
+		var parts: Array[String] = []
+		for z in zones:
+			var fl: Dictionary = NoteManager.floor_by_id(str(z["floor"]))
+			parts.append("%s (%s, ≤%d dB, est. %d dB, %d notes)" % [_esc(str(z["name"])), _esc(str(fl.get("name", "?"))), int(z["noise_limit_db"]), int(z.get("noise_db", 0)), int(zone_counts.get(str(z["id"]), 0))])
+		h.append("<div class=\"conflict\" style=\"background:#1f2630;border-color:#3a4a5a\"><b>Zones</b> · %s</div>" % " · ".join(parts))
 
 	for key in order:
 		var bang := "<span class=\"bang\">! conflict</span>" if NoteManager.is_conflict(key) else ""

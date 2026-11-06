@@ -96,6 +96,16 @@ func _physics_process(delta: float) -> void:
 # ---------------- ladder ----------------
 
 func _try_climb(step: int) -> void:
+	# An imported model has no ladder: Space / C simply step to the next floor's landing
+	# (floors and landings come from the space-setup data in NoteManager).
+	if NoteManager.has_model():
+		var lands: Array[Vector3] = NoteManager.floor_landings()
+		var idx := NoteManager.floor_index_at(global_position.y) + step
+		if lands.size() < 2 or idx < 0 or idx >= lands.size():
+			return
+		velocity = Vector3.ZERO
+		global_position = lands[idx] + Vector3(0.0, 0.05, 0.0)
+		return
 	var here := Vector2(global_position.x, global_position.z)
 	if here.distance_to(ladder_position) > use_radius:
 		return
@@ -160,7 +170,8 @@ func _on_teleport(cam_pos: Vector3, cam_rot: Vector3) -> void:
 func _nearest_landing_y(y: float) -> float:
 	var best := y
 	var best_d := INF
-	for l in landings:
+	var lands: Array = NoteManager.floor_landings() if NoteManager.has_model() else landings
+	for l in lands:
 		var d := absf(l.y - y)
 		if d < best_d:
 			best_d = d

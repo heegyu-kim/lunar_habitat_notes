@@ -72,6 +72,18 @@ func _on_button_pressed(action: StringName, step: int) -> void:
 	if not enabled or _climbing or action != button_action or _camera == null:
 		return
 
+	# An imported model (space-setup pipeline) has no ladder: A / X step straight to the next
+	# floor's landing, keeping your place in the play space.
+	if NoteManager.has_model():
+		var lands: Array[Vector3] = NoteManager.floor_landings()
+		var idx := NoteManager.floor_index_at(_origin.global_position.y) + step
+		if lands.size() < 2 or idx < 0 or idx >= lands.size():
+			return
+		var landing := lands[idx]
+		var head_pos := _camera.global_position
+		_origin.global_position += Vector3(landing.x - head_pos.x, landing.y - _origin.global_position.y, landing.z - head_pos.z)
+		return
+
 	var head := Vector2(_camera.global_position.x, _camera.global_position.z)
 	if head.distance_to(ladder_position) > use_radius:
 		return

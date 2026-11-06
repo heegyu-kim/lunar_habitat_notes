@@ -47,6 +47,25 @@ var _name_edit: LineEdit
 var _role_row: NoteUiKit.ChoiceRow
 var _session_name: LineEdit
 var _session_opt: OptionButton
+# By path so headless tests work before the editor refreshes its class_name cache.
+const SP := preload("res://addons/sticky_notes/space/space_presets.gd")
+var _model_opt: OptionButton
+var _unit_opt: OptionButton
+var _up_opt: OptionButton
+var _model_text: Label
+var _file_dialog: FileDialog
+var _floors_box: VBoxContainer
+var _zones_box: VBoxContainer
+var _zone_type_opt: OptionButton
+var _zone_name_edit: LineEdit
+var _zone_corner_text: Label
+var _zone_filter: OptionButton
+var _zone_corner_a: Vector3 = Vector3.INF
+var _zone_corner_b: Vector3 = Vector3.INF
+var _noise_box: VBoxContainer
+var _noise_type_opt: OptionButton
+var _noise_name_edit: LineEdit
+var _noise_text: Label
 var _status: Label
 var _mic_opt: OptionButton
 var _mic_level: ProgressBar
@@ -145,6 +164,12 @@ func _build_list_tab() -> void:
 	_role_filter.item_selected.connect(func(_i: int) -> void: refresh_list())
 	frow.add_child(_role_filter)
 	v.add_child(frow)
+	_zone_filter = OptionButton.new()
+	_zone_filter.add_theme_font_size_override("font_size", 12)
+	_zone_filter.size_flags_horizontal = SIZE_EXPAND_FILL
+	_zone_filter.item_selected.connect(func(_i: int) -> void: refresh_list())
+	v.add_child(_zone_filter)
+	_refresh_zone_filter()
 
 	_show_resolved = CheckButton.new()
 	_show_resolved.text = "Show resolved"
@@ -209,6 +234,122 @@ func _build_session_tab() -> void:
 	lrow.add_child(_session_opt)
 	lrow.add_child(NoteUiKit.button("Load", _on_load_pressed))
 	v.add_child(lrow)
+
+	v.add_child(NoteUiKit.separator())
+	v.add_child(NoteUiKit.label("Space model", 14))
+	v.add_child(NoteUiKit.small("Bring in your own habitat as .glb / .gltf. It replaces the built-in habitat; notes stick to it and the session remembers which model was used."))
+	_model_text = NoteUiKit.small("")
+	v.add_child(_model_text)
+	var urow := NoteUiKit.hbox(6)
+	urow.add_child(NoteUiKit.small("Units"))
+	_unit_opt = OptionButton.new()
+	_unit_opt.add_theme_font_size_override("font_size", 12)
+	for u in ["m", "cm", "mm"]:
+		_unit_opt.add_item(u)
+	urow.add_child(_unit_opt)
+	urow.add_child(NoteUiKit.small("Up axis"))
+	_up_opt = OptionButton.new()
+	_up_opt.add_theme_font_size_override("font_size", 12)
+	for a in ["Y", "Z"]:
+		_up_opt.add_item(a)
+	urow.add_child(_up_opt)
+	urow.add_child(NoteUiKit.spacer())
+	urow.add_child(NoteUiKit.button("Import file…", _on_import_pressed))
+	v.add_child(urow)
+	var mrow2 := NoteUiKit.hbox(6)
+	_model_opt = OptionButton.new()
+	_model_opt.add_theme_font_size_override("font_size", 12)
+	_model_opt.size_flags_horizontal = SIZE_EXPAND_FILL
+	mrow2.add_child(_model_opt)
+	mrow2.add_child(NoteUiKit.button("Load", _on_model_load_pressed))
+	mrow2.add_child(NoteUiKit.button("Built-in", _on_model_unload_pressed))
+	v.add_child(mrow2)
+	_refresh_models()
+	_file_dialog = FileDialog.new()
+	_file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_file_dialog.filters = PackedStringArray(["*.glb, *.gltf ; glTF models"])
+	_file_dialog.use_native_dialog = true
+	_file_dialog.title = "Import habitat model"
+	_file_dialog.file_selected.connect(_on_model_file_selected)
+	add_child(_file_dialog)
+
+	var sun_row := NoteUiKit.hbox(6)
+	sun_row.add_child(NoteUiKit.small("Sun azimuth"))
+	var sun := HSlider.new()
+	sun.min_value = -180.0
+	sun.max_value = 180.0
+	sun.step = 1.0
+	sun.size_flags_horizontal = SIZE_EXPAND_FILL
+	var ext := get_tree().get_first_node_in_group("lunar_exterior")
+	sun.value = float(ext.get("sun_azimuth_deg")) if ext != null else -35.0
+	sun.value_changed.connect(func(v: float) -> void:
+		for n in get_tree().get_nodes_in_group("lunar_exterior"):
+			n.set_sun_azimuth(v))
+	sun_row.add_child(sun)
+	v.add_child(sun_row)
+
+	v.add_child(NoteUiKit.label("Floors", 13))
+	v.add_child(NoteUiKit.small("Found from the geometry (upward faces). Rename or delete a floor, or stand somewhere and press Landing to set where teleports and Space / C arrive on that floor."))
+	_floors_box = NoteUiKit.vbox(4)
+	v.add_child(_floors_box)
+	var frow := NoteUiKit.hbox(6)
+	frow.add_child(NoteUiKit.button("Add floor at my feet", _on_add_floor_pressed))
+	frow.add_child(NoteUiKit.button("Re-detect", _on_redetect_pressed))
+	v.add_child(frow)
+	_refresh_floors()
+
+	v.add_child(NoteUiKit.label("Zones", 13))
+	v.add_child(NoteUiKit.small("Stand at two opposite corners of a room and press Corner A, then Corner B. Pick a type: it fills in the zone's character (quiet / clean / private) and the noise it tolerates."))
+	var zrow := NoteUiKit.hbox(6)
+	_zone_type_opt = OptionButton.new()
+	_zone_type_opt.add_theme_font_size_override("font_size", 12)
+	for key in SP.ZONE_ORDER:
+		_zone_type_opt.add_item(SP.zone_type_name(key))
+	zrow.add_child(_zone_type_opt)
+	_zone_name_edit = LineEdit.new()
+	_zone_name_edit.placeholder_text = "zone name (optional)"
+	_zone_name_edit.size_flags_horizontal = SIZE_EXPAND_FILL
+	zrow.add_child(_zone_name_edit)
+	v.add_child(zrow)
+	var zcrow := NoteUiKit.hbox(6)
+	zcrow.add_child(NoteUiKit.button("Corner A = my feet", _on_zone_corner_a))
+	zcrow.add_child(NoteUiKit.button("Corner B = my feet", _on_zone_corner_b))
+	zcrow.add_child(NoteUiKit.button("Create zone", _on_zone_create))
+	v.add_child(zcrow)
+	_zone_corner_text = NoteUiKit.small("corners: none")
+	v.add_child(_zone_corner_text)
+	_zones_box = NoteUiKit.vbox(4)
+	v.add_child(_zones_box)
+	v.add_child(NoteUiKit.label("Noise sources", 13))
+	v.add_child(NoteUiKit.small("Stand where a fan, pump or machine is and add it. Each zone then shows its estimated level (distance loss, −15 dB per wall, −25 dB per floor: a rough rule, not an acoustic simulation) against what it tolerates."))
+	var nrow := NoteUiKit.hbox(6)
+	_noise_type_opt = OptionButton.new()
+	_noise_type_opt.add_theme_font_size_override("font_size", 12)
+	for key in SP.NOISE_ORDER:
+		var nt: Dictionary = SP.noise_type(key)
+		_noise_type_opt.add_item("%s  %d dB" % [str(nt["name"]), int(nt["db"])])
+	nrow.add_child(_noise_type_opt)
+	_noise_name_edit = LineEdit.new()
+	_noise_name_edit.placeholder_text = "name (optional)"
+	_noise_name_edit.size_flags_horizontal = SIZE_EXPAND_FILL
+	nrow.add_child(_noise_name_edit)
+	nrow.add_child(NoteUiKit.button("Add at my feet", _on_noise_add))
+	v.add_child(nrow)
+	_noise_box = NoteUiKit.vbox(4)
+	v.add_child(_noise_box)
+	_noise_text = NoteUiKit.small("")
+	v.add_child(_noise_text)
+	_refresh_noise()
+
+	var zvis := CheckButton.new()
+	zvis.text = "Show zone outlines and noise sources in the scene"
+	zvis.button_pressed = NoteManager.zones_visible
+	zvis.add_theme_font_size_override("font_size", 12)
+	zvis.toggled.connect(func(on: bool) -> void: NoteManager.set_zones_visible(on))
+	v.add_child(zvis)
+	_refresh_zones()
+	NoteManager.space_changed.connect(_on_space_changed)
 
 	v.add_child(NoteUiKit.separator())
 	v.add_child(NoteUiKit.label("Report", 14))
@@ -698,6 +839,10 @@ func refresh_list() -> void:
 			continue
 		if n.resolved and not _show_resolved.button_pressed:
 			continue
+		if _zone_filter != null and _zone_filter.item_count > 0:
+			var want: Variant = _zone_filter.get_item_metadata(_zone_filter.selected)
+			if want != null and str(want) != "*" and n.zone_id != str(want):
+				continue
 		var replies := NoteManager.replies_of(n.id).size()
 		var label := "%s  %s" % [n.role_initial(), n.short_text(34)]
 		if n.text == "":
@@ -724,6 +869,9 @@ func refresh_list() -> void:
 	var txt := "Notes  %d / %d" % [_shown_ids.size(), all.size()]
 	if not conflicts.is_empty():
 		txt += "     !  conflict on " + ", ".join(conflicts)
+	var warns: Array[String] = NoteManager.noise_warnings()
+	if not warns.is_empty():
+		txt += "     !  noise: " + " · ".join(warns)
 	_count.text = txt
 
 
@@ -795,6 +943,258 @@ func _on_load_pressed() -> void:
 func _on_load_confirmed() -> void:
 	var count := NoteManager.load_session(_pending_load, true)
 	_status.text = "Loaded %d notes from %s" % [count, _pending_load.get_file()]
+
+
+func _refresh_models() -> void:
+	if _model_opt == null:
+		return
+	var current := str(NoteManager.space.get("model", {}).get("file", ""))
+	_model_opt.clear()
+	var files := NoteManager.list_models()
+	for i in files.size():
+		_model_opt.add_item(files[i])
+		if files[i] == current:
+			_model_opt.selected = i
+	if _model_opt.item_count == 0:
+		_model_opt.add_item("(no models in data folder)")
+		_model_opt.disabled = true
+	else:
+		_model_opt.disabled = false
+	_model_text.text = "Current: " + NoteManager.model_status
+	var m: Dictionary = NoteManager.space.get("model", {})
+	if not m.is_empty():
+		_unit_opt.selected = maxi(0, ["m", "cm", "mm"].find(str(m.get("unit", "m"))))
+		_up_opt.selected = maxi(0, ["Y", "Z"].find(str(m.get("up_axis", "Y"))))
+
+
+func _model_opts() -> Dictionary:
+	return {"unit": _unit_opt.get_item_text(_unit_opt.selected), "up_axis": _up_opt.get_item_text(_up_opt.selected)}
+
+
+func _on_import_pressed() -> void:
+	_file_dialog.popup_centered(Vector2i(900, 600))
+
+
+func _on_model_file_selected(path: String) -> void:
+	var file := NoteManager.import_model_file(path)
+	if file == "":
+		_status.text = "Import failed: " + path.get_file()
+		return
+	_load_model_named(file)
+
+
+func _on_model_load_pressed() -> void:
+	if _model_opt.disabled:
+		return
+	_load_model_named(_model_opt.get_item_text(_model_opt.selected))
+
+
+func _load_model_named(file: String) -> void:
+	_status.text = "Loading " + file + "…"
+	var ok := NoteManager.load_model(file, _model_opts())
+	_status.text = ("Loaded " + file) if ok else ("Load failed: " + NoteManager.model_status)
+
+
+func _on_model_unload_pressed() -> void:
+	NoteManager.unload_model()
+	_status.text = "Built-in habitat shown"
+
+
+func _on_space_changed() -> void:
+	_refresh_models()
+	_refresh_floors()
+	_refresh_zones()
+	_refresh_noise()
+	_refresh_zone_filter()
+	refresh_list()
+
+
+func _refresh_noise() -> void:
+	if _noise_box == null:
+		return
+	for c in _noise_box.get_children():
+		c.queue_free()
+	var sources: Array = NoteManager.noise_sources_sorted()
+	if sources.is_empty():
+		_noise_box.add_child(NoteUiKit.small("(no noise sources)"))
+	for s in sources:
+		var id := str(s["id"])
+		var row := NoteUiKit.hbox(6)
+		var name_edit := LineEdit.new()
+		name_edit.text = str(s["name"])
+		name_edit.add_theme_font_size_override("font_size", 12)
+		name_edit.custom_minimum_size = Vector2(110, 0)
+		name_edit.text_submitted.connect(func(t: String) -> void: NoteManager.update_noise_source(id, {"name": t}))
+		row.add_child(name_edit)
+		var spin := SpinBox.new()
+		spin.min_value = 30
+		spin.max_value = 110
+		spin.step = 1
+		spin.value = float(s["db_at_1m"])
+		spin.suffix = "dB"
+		spin.add_theme_font_size_override("font_size", 12)
+		spin.value_changed.connect(func(v: float) -> void: NoteManager.update_noise_source(id, {"db_at_1m": v}))
+		row.add_child(spin)
+		var p: Vector3 = NoteManager.noise_source_position(s)
+		var zname := str(NoteManager.zone_at(p).get("name", "outside zones"))
+		var info := NoteUiKit.small("%s  (%.1f, %.1f)" % [zname, p.x, p.z])
+		info.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.add_child(info)
+		row.add_child(NoteUiKit.button("Move here", func() -> void: NoteManager.update_noise_source(id, {"position": NoteManager.observer_feet()})))
+		row.add_child(NoteUiKit.button("✕", func() -> void: NoteManager.remove_noise_source(id), true))
+		_noise_box.add_child(row)
+	var warns: Array[String] = NoteManager.noise_warnings()
+	if warns.is_empty():
+		_noise_text.text = "No zone over its noise limit." if not sources.is_empty() else ""
+		_noise_text.remove_theme_color_override("font_color")
+	else:
+		_noise_text.text = "!  Over limit: " + " · ".join(warns)
+		_noise_text.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4))
+
+
+func _on_noise_add() -> void:
+	var key: String = SP.NOISE_ORDER[_noise_type_opt.selected]
+	var s: Dictionary = NoteManager.add_noise_source(key, NoteManager.observer_feet() + Vector3(0.0, 0.5, 0.0), _noise_name_edit.text)
+	_noise_name_edit.text = ""
+	_status.text = "Noise source %s added" % str(s["name"])
+
+
+func _refresh_zones() -> void:
+	if _zones_box == null:
+		return
+	for c in _zones_box.get_children():
+		c.queue_free()
+	var zones: Array = NoteManager.zones_sorted()
+	if zones.is_empty():
+		_zones_box.add_child(NoteUiKit.small("(no zones yet)"))
+		return
+	var counts: Dictionary = NoteManager.zone_note_counts()
+	for z in zones:
+		var id := str(z["id"])
+		var row := NoteUiKit.hbox(6)
+		var name_edit := LineEdit.new()
+		name_edit.text = str(z["name"])
+		name_edit.add_theme_font_size_override("font_size", 12)
+		name_edit.custom_minimum_size = Vector2(110, 0)
+		name_edit.text_submitted.connect(func(t: String) -> void: NoteManager.update_zone(id, {"name": t}))
+		name_edit.focus_exited.connect(func() -> void:
+			if name_edit.text.strip_edges() != "" and name_edit.text != str(NoteManager.zone_by_id(id).get("name", "")):
+				NoteManager.update_zone(id, {"name": name_edit.text}))
+		row.add_child(name_edit)
+		var topt := OptionButton.new()
+		topt.add_theme_font_size_override("font_size", 12)
+		for key in SP.ZONE_ORDER:
+			topt.add_item(SP.zone_type_name(key))
+		topt.selected = maxi(0, SP.ZONE_ORDER.find(str(z["type"])))
+		topt.item_selected.connect(func(i: int) -> void: NoteManager.update_zone(id, {"type": SP.ZONE_ORDER[i]}))
+		row.add_child(topt)
+		var fl: Dictionary = NoteManager.floor_by_id(str(z["floor"]))
+		var r: Rect2 = NoteManager.zone_rect(z)
+		var info := NoteUiKit.small("%s  %.1f×%.1f m  ≤%d dB  %d notes" % [str(fl.get("name", "?")), r.size.x, r.size.y, int(z["noise_limit_db"]), int(counts.get(id, 0))])
+		info.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.add_child(info)
+		row.add_child(NoteUiKit.button("Go", func() -> void:
+			NoteManager.teleport_requested.emit(NoteManager.zone_center(z) + Vector3(0.0, 1.6, 0.0), Vector3.ZERO)))
+		row.add_child(NoteUiKit.button("✕", func() -> void: NoteManager.remove_zone(id), true))
+		_zones_box.add_child(row)
+
+
+func _on_zone_corner_a() -> void:
+	_zone_corner_a = NoteManager.observer_feet()
+	_update_corner_text()
+
+
+func _on_zone_corner_b() -> void:
+	_zone_corner_b = NoteManager.observer_feet()
+	_update_corner_text()
+
+
+func _update_corner_text() -> void:
+	var a := "—" if _zone_corner_a == Vector3.INF else "(%.1f, %.1f)" % [_zone_corner_a.x, _zone_corner_a.z]
+	var b := "—" if _zone_corner_b == Vector3.INF else "(%.1f, %.1f)" % [_zone_corner_b.x, _zone_corner_b.z]
+	_zone_corner_text.text = "corners: A %s   B %s" % [a, b]
+
+
+func _on_zone_create() -> void:
+	if _zone_corner_a == Vector3.INF or _zone_corner_b == Vector3.INF:
+		_status.text = "Set both corners first"
+		return
+	var fi := NoteManager.floor_index_below(_zone_corner_a.y)
+	if fi < 0:
+		_status.text = "No floor to put the zone on"
+		return
+	var fid := str(NoteManager.floors_sorted()[fi]["id"])
+	var rect := Rect2(Vector2(_zone_corner_a.x, _zone_corner_a.z), Vector2(_zone_corner_b.x - _zone_corner_a.x, _zone_corner_b.z - _zone_corner_a.z)).abs()
+	if rect.size.x < 0.3 or rect.size.y < 0.3:
+		_status.text = "Corners are too close together"
+		return
+	var z: Dictionary = NoteManager.add_zone(fid, rect, SP.ZONE_ORDER[_zone_type_opt.selected], _zone_name_edit.text)
+	_zone_corner_a = Vector3.INF
+	_zone_corner_b = Vector3.INF
+	_zone_name_edit.text = ""
+	_update_corner_text()
+	_status.text = "Zone %s created" % str(z["name"])
+
+
+func _refresh_zone_filter() -> void:
+	if _zone_filter == null:
+		return
+	var prev := _zone_filter.get_item_text(_zone_filter.selected) if _zone_filter.item_count > 0 else ""
+	_zone_filter.clear()
+	_zone_filter.add_item("All zones")
+	_zone_filter.set_item_metadata(0, "*")
+	for z in NoteManager.zones_sorted():
+		_zone_filter.add_item(str(z["name"]))
+		_zone_filter.set_item_metadata(_zone_filter.item_count - 1, str(z["id"]))
+	_zone_filter.add_item("(outside zones)")
+	_zone_filter.set_item_metadata(_zone_filter.item_count - 1, "")
+	for i in _zone_filter.item_count:
+		if _zone_filter.get_item_text(i) == prev:
+			_zone_filter.selected = i
+
+
+func _refresh_floors() -> void:
+	if _floors_box == null:
+		return
+	for c in _floors_box.get_children():
+		c.queue_free()
+	var floors: Array = NoteManager.floors_sorted()
+	if floors.is_empty():
+		_floors_box.add_child(NoteUiKit.small("(no floors found)"))
+		return
+	for fl in floors:
+		var id := str(fl["id"])
+		var row := NoteUiKit.hbox(6)
+		var name_edit := LineEdit.new()
+		name_edit.text = str(fl["name"])
+		name_edit.add_theme_font_size_override("font_size", 12)
+		name_edit.custom_minimum_size = Vector2(90, 0)
+		name_edit.text_submitted.connect(func(t: String) -> void: NoteManager.rename_floor(id, t))
+		name_edit.focus_exited.connect(func() -> void: NoteManager.rename_floor(id, name_edit.text))
+		row.add_child(name_edit)
+		var lands: Array = fl.get("landings", [])
+		var where := ""
+		if not lands.is_empty():
+			where = "  landing (%.1f, %.1f)" % [float(lands[0][0]), float(lands[0][2])]
+		var info := NoteUiKit.small("y = %.2f m%s" % [float(fl["y"]), where])
+		info.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.add_child(info)
+		row.add_child(NoteUiKit.button("Landing", func() -> void:
+			NoteManager.set_floor_landing(id, NoteManager.observer_feet())
+			_status.text = "Landing for %s set where you stand" % str(fl["name"])))
+		row.add_child(NoteUiKit.button("✕", func() -> void: NoteManager.remove_floor(id), true))
+		_floors_box.add_child(row)
+
+
+func _on_add_floor_pressed() -> void:
+	var fl: Dictionary = NoteManager.add_floor(NoteManager.observer_feet().y)
+	_status.text = "Added floor %s at %.2f m" % [str(fl["name"]), float(fl["y"])]
+
+
+func _on_redetect_pressed() -> void:
+	NoteManager.rebuild_floors(false)
+	NoteManager.space_changed.emit()
+	_status.text = "Floors re-detected: %d" % NoteManager.floors_sorted().size()
 
 
 func _on_export_pressed() -> void:

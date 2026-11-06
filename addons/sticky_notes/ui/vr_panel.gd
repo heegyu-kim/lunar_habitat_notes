@@ -42,6 +42,17 @@ var _shown_ids: Array = []
 var _type_filter: OptionButton
 var _role_filter: OptionButton
 var _session_opt: OptionButton
+# By path so headless tests work before the editor refreshes its class_name cache.
+const SP := preload("res://addons/sticky_notes/space/space_presets.gd")
+var _model_opt: OptionButton
+var _unit_row: NoteUiKit.ChoiceRow
+var _up_row: NoteUiKit.ChoiceRow
+var _zone_type_opt: OptionButton
+var _zone_type_sel := 0
+var _noise_type_opt: OptionButton
+var _noise_type_sel := 0
+var _zone_corner_a: Vector3 = Vector3.INF
+var _zone_corner_b: Vector3 = Vector3.INF
 var _role_row: NoteUiKit.ChoiceRow
 var _pending_reply: NoteData = null
 var _confirm_delete: ConfirmationDialog
@@ -489,6 +500,154 @@ func _build_session() -> void:
 	_body.add_child(_big("Export HTML report", _on_export_pressed))
 
 	_body.add_child(NoteUiKit.separator())
+	_body.add_child(NoteUiKit.label("Space model", F_SMALL, NoteUiKit.MUTED))
+	_body.add_child(NoteUiKit.label("Current: " + NoteManager.model_status, F_SMALL, NoteUiKit.FG, true))
+	_body.add_child(NoteUiKit.label("Copy .glb files into the data folder's models/ on the PC, then pick one here.", F_SMALL, NoteUiKit.MUTED, true))
+	_model_opt = OptionButton.new()
+	_model_opt.add_theme_font_size_override("font_size", F_SMALL)
+	_model_opt.custom_minimum_size = Vector2(0, BTN_H_SMALL)
+	_model_opt.size_flags_horizontal = SIZE_EXPAND_FILL
+	var cur := str(NoteManager.space.get("model", {}).get("file", ""))
+	var files := NoteManager.list_models()
+	for i in files.size():
+		_model_opt.add_item(files[i])
+		if files[i] == cur:
+			_model_opt.selected = i
+	if _model_opt.item_count == 0:
+		_model_opt.add_item("(no models in data folder)")
+		_model_opt.disabled = true
+	_body.add_child(_model_opt)
+	var m: Dictionary = NoteManager.space.get("model", {})
+	_unit_row = NoteUiKit.ChoiceRow.new(["m", "cm", "mm"])
+	_unit_row.set_selected(maxi(0, ["m", "cm", "mm"].find(str(m.get("unit", "m")))))
+	_body.add_child(_unit_row)
+	_up_row = NoteUiKit.ChoiceRow.new(["Y up", "Z up"])
+	_up_row.set_selected(maxi(0, ["Y", "Z"].find(str(m.get("up_axis", "Y")))))
+	_body.add_child(_up_row)
+	var mrow := NoteUiKit.hbox(6)
+	var lm := _big("Load model", _on_model_load_pressed)
+	lm.size_flags_horizontal = SIZE_EXPAND_FILL
+	mrow.add_child(lm)
+	var bi := _big("Built-in habitat", _on_model_unload_pressed)
+	bi.size_flags_horizontal = SIZE_EXPAND_FILL
+	mrow.add_child(bi)
+	_body.add_child(mrow)
+
+	_body.add_child(NoteUiKit.label("Floors  (stand on a floor and press Landing: that is where A / X and teleports arrive)", F_SMALL, NoteUiKit.MUTED, true))
+	for fl in NoteManager.floors_sorted():
+		var id := str(fl["id"])
+		var frow := NoteUiKit.hbox(6)
+		var fl_label := NoteUiKit.label("%s   %.2f m" % [str(fl["name"]), float(fl["y"])], F_SMALL, NoteUiKit.FG)
+		fl_label.size_flags_horizontal = SIZE_EXPAND_FILL
+		frow.add_child(fl_label)
+		var lb := _big("Landing", func() -> void:
+			NoteManager.set_floor_landing(id, NoteManager.observer_feet())
+			_set_status("Landing for %s set here" % str(fl["name"]))
+			_rebuild())
+		lb.custom_minimum_size = Vector2(150, BTN_H_SMALL)
+		frow.add_child(lb)
+		var xb := _big("✕", func() -> void:
+			NoteManager.remove_floor(id)
+			_rebuild())
+		xb.custom_minimum_size = Vector2(60, BTN_H_SMALL)
+		frow.add_child(xb)
+		_body.add_child(frow)
+	var arow := NoteUiKit.hbox(6)
+	var addb := _big("Add floor at my feet", func() -> void:
+		NoteManager.add_floor(NoteManager.observer_feet().y)
+		_rebuild())
+	addb.size_flags_horizontal = SIZE_EXPAND_FILL
+	arow.add_child(addb)
+	var reb := _big("Re-detect", func() -> void:
+		NoteManager.rebuild_floors(false)
+		NoteManager.space_changed.emit()
+		_rebuild())
+	reb.size_flags_horizontal = SIZE_EXPAND_FILL
+	arow.add_child(reb)
+	_body.add_child(arow)
+
+	_body.add_child(NoteUiKit.separator())
+	_body.add_child(NoteUiKit.label("Zones  (stand at two opposite corners: Corner A, Corner B, then Create)", F_SMALL, NoteUiKit.MUTED, true))
+	var counts: Dictionary = NoteManager.zone_note_counts()
+	for z in NoteManager.zones_sorted():
+		var zid := str(z["id"])
+		var zrow := NoteUiKit.hbox(6)
+		var fl: Dictionary = NoteManager.floor_by_id(str(z["floor"]))
+		var zl := NoteUiKit.label("%s · %s · %s · %d notes" % [str(z["name"]), SP.zone_type_name(str(z["type"])), str(fl.get("name", "?")), int(counts.get(zid, 0))], F_SMALL, SP.zone_color(str(z["type"])), true)
+		zl.size_flags_horizontal = SIZE_EXPAND_FILL
+		zrow.add_child(zl)
+		var gb := _big("Go", func() -> void:
+			NoteManager.teleport_requested.emit(NoteManager.zone_center(z) + Vector3(0.0, 1.6, 0.0), Vector3.ZERO))
+		gb.custom_minimum_size = Vector2(90, BTN_H_SMALL)
+		zrow.add_child(gb)
+		var zx := _big("✕", func() -> void:
+			NoteManager.remove_zone(zid)
+			_rebuild())
+		zx.custom_minimum_size = Vector2(60, BTN_H_SMALL)
+		zrow.add_child(zx)
+		_body.add_child(zrow)
+	_zone_type_opt = OptionButton.new()
+	_zone_type_opt.add_theme_font_size_override("font_size", F_SMALL)
+	_zone_type_opt.custom_minimum_size = Vector2(0, BTN_H_SMALL)
+	for key in SP.ZONE_ORDER:
+		_zone_type_opt.add_item(SP.zone_type_name(key))
+	_zone_type_opt.selected = _zone_type_sel
+	_zone_type_opt.item_selected.connect(func(i: int) -> void: _zone_type_sel = i)
+	_body.add_child(_zone_type_opt)
+	var ctext := "corners: %s / %s" % ["A set" if _zone_corner_a != Vector3.INF else "A —", "B set" if _zone_corner_b != Vector3.INF else "B —"]
+	_body.add_child(NoteUiKit.label(ctext, F_SMALL, NoteUiKit.MUTED))
+	var zb := NoteUiKit.hbox(6)
+	var ca := _big("Corner A", func() -> void:
+		_zone_corner_a = NoteManager.observer_feet()
+		_rebuild())
+	ca.size_flags_horizontal = SIZE_EXPAND_FILL
+	zb.add_child(ca)
+	var cb := _big("Corner B", func() -> void:
+		_zone_corner_b = NoteManager.observer_feet()
+		_rebuild())
+	cb.size_flags_horizontal = SIZE_EXPAND_FILL
+	zb.add_child(cb)
+	var cz := _big("Create", _on_zone_create)
+	cz.size_flags_horizontal = SIZE_EXPAND_FILL
+	zb.add_child(cz)
+	_body.add_child(zb)
+
+	_body.add_child(NoteUiKit.separator())
+	_body.add_child(NoteUiKit.label("Noise sources  (stand at the machine and add it; zones over their limit turn red)", F_SMALL, NoteUiKit.MUTED, true))
+	for s in NoteManager.noise_sources_sorted():
+		var sid := str(s["id"])
+		var nrow := NoteUiKit.hbox(6)
+		var nlab := NoteUiKit.label("%s  %d dB" % [str(s["name"]), int(s["db_at_1m"])], F_SMALL, Color(1.0, 0.75, 0.4), true)
+		nlab.size_flags_horizontal = SIZE_EXPAND_FILL
+		nrow.add_child(nlab)
+		var mv := _big("Move here", func() -> void:
+			NoteManager.update_noise_source(sid, {"position": NoteManager.observer_feet() + Vector3(0.0, 0.5, 0.0)})
+			_rebuild())
+		mv.custom_minimum_size = Vector2(150, BTN_H_SMALL)
+		nrow.add_child(mv)
+		var nx := _big("✕", func() -> void:
+			NoteManager.remove_noise_source(sid)
+			_rebuild())
+		nx.custom_minimum_size = Vector2(60, BTN_H_SMALL)
+		nrow.add_child(nx)
+		_body.add_child(nrow)
+	var warns: Array[String] = NoteManager.noise_warnings()
+	if not warns.is_empty():
+		_body.add_child(NoteUiKit.label("!  Over limit: " + " · ".join(warns), F_SMALL, Color(1.0, 0.45, 0.4), true))
+	_noise_type_opt = OptionButton.new()
+	_noise_type_opt.add_theme_font_size_override("font_size", F_SMALL)
+	_noise_type_opt.custom_minimum_size = Vector2(0, BTN_H_SMALL)
+	for key in SP.NOISE_ORDER:
+		var nt: Dictionary = SP.noise_type(key)
+		_noise_type_opt.add_item("%s  %d dB" % [str(nt["name"]), int(nt["db"])])
+	_noise_type_opt.selected = _noise_type_sel
+	_noise_type_opt.item_selected.connect(func(i: int) -> void: _noise_type_sel = i)
+	_body.add_child(_noise_type_opt)
+	_body.add_child(_big("Add noise source here", func() -> void:
+		NoteManager.add_noise_source(SP.NOISE_ORDER[_noise_type_sel], NoteManager.observer_feet() + Vector3(0.0, 0.5, 0.0))
+		_rebuild()))
+
+	_body.add_child(NoteUiKit.separator())
 	_body.add_child(NoteUiKit.label("Recording", F_SMALL, NoteUiKit.MUTED))
 	if NoteManager.clip_mode == "ffmpeg":
 		_body.add_child(NoteUiKit.label("Real video via ffmpeg. Fallback microphone for ffmpeg (used only if Godot cannot open a mic):", F_SMALL, NoteUiKit.FG, true))
@@ -727,3 +886,40 @@ func _on_export_pressed() -> void:
 		return
 	var path := NoteManager.export_report("")
 	_set_status(("Report saved  " + path.get_file()) if path != "" else "Export failed")
+
+
+func _on_model_load_pressed() -> void:
+	if _model_opt == null or _model_opt.disabled:
+		return
+	var file := _model_opt.get_item_text(_model_opt.selected)
+	var opts := {"unit": ["m", "cm", "mm"][_unit_row.selected], "up_axis": ["Y", "Z"][_up_row.selected]}
+	_set_status("Loading " + file + "…")
+	var ok := NoteManager.load_model(file, opts)
+	_set_status(("Loaded " + file) if ok else ("Load failed: " + NoteManager.model_status))
+	_rebuild()
+
+
+func _on_model_unload_pressed() -> void:
+	NoteManager.unload_model()
+	_set_status("Built-in habitat shown")
+	_rebuild()
+
+
+func _on_zone_create() -> void:
+	if _zone_corner_a == Vector3.INF or _zone_corner_b == Vector3.INF:
+		_set_status("Set Corner A and Corner B first")
+		return
+	var fi := NoteManager.floor_index_below(_zone_corner_a.y)
+	if fi < 0:
+		_set_status("No floor to put the zone on")
+		return
+	var fid := str(NoteManager.floors_sorted()[fi]["id"])
+	var rect := Rect2(Vector2(_zone_corner_a.x, _zone_corner_a.z), Vector2(_zone_corner_b.x - _zone_corner_a.x, _zone_corner_b.z - _zone_corner_a.z)).abs()
+	if rect.size.x < 0.3 or rect.size.y < 0.3:
+		_set_status("Corners are too close together")
+		return
+	var z: Dictionary = NoteManager.add_zone(fid, rect, SP.ZONE_ORDER[_zone_type_sel])
+	_zone_corner_a = Vector3.INF
+	_zone_corner_b = Vector3.INF
+	_set_status("Zone %s created" % str(z["name"]))
+	_rebuild()

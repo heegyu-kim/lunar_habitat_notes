@@ -96,8 +96,12 @@ List 탭의 Tour 버튼은 필터된 노트를 순서대로 돈다. `]` 다음, 
 ```json
 {
   "format": "sticky_notes",
-  "version": 1,
+  "version": 2,
   "saved_at": "2026-10-24 17:30:00",
+  "model": { "file": "habitat.glb", "unit": "cm", "up_axis": "Z", "align_floor": true, "center_xz": true },
+  "floors": [],
+  "zones": [],
+  "noise_sources": [],
   "notes": [
     {
       "id": "1761341400_0427",
@@ -121,6 +125,7 @@ List 탭의 Tour 버튼은 필터된 노트를 순서대로 돈다. `]` 다음, 
 ```
 
 `role`과 `type`은 정수 enum. 순서는 `note_data.gd`의 `TYPE_NAMES`, `ROLE_NAMES`와 같다.
+`model`은 가져온 모델(비어 있으면 기본 거주지). 파일은 `user://sticky_notes/models/`에서 찾는다. `floors`·`zones`·`noise_sources`는 공간 설정 파이프라인 데이터로, 명세는 `docs/HABITAT_DESIGN.md` 2절. version 1 파일도 그대로 열린다.
 미디어는 파일 이름만 저장하고 항상 `user://sticky_notes/media/` 아래에서 찾는다.
 세션 json과 media 폴더를 함께 옮기면 어느 컴퓨터에서든 열린다. 리포트 HTML은 미디어를 안에 품고 있어서 파일 하나로 끝난다.
 
