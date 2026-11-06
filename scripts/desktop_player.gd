@@ -2,6 +2,8 @@
 ##
 ##   W A S D, mouse      move, look          Shift   run
 ##   Space / C           near the ladder: climb up / down one deck (same landings as XRLadder)
+##   F                   fly mode on / off: walls and floors are ignored, Space / C go up / down.
+##                       The way to get outside a model that has no door, or to look at it from above.
 ##   N (hold) / E / Tab  sticky notes (NotePlacer under the camera)
 ##   1 ~ 5, ] [, Esc     type filter, tour next / prev, close
 ##
@@ -35,10 +37,17 @@ extends CharacterBody3D
 ## Collision groups switched off while climbing so you pass through the decks
 @export var floor_groups: Array[String] = ["habitat_floor", "habitat_surface"]
 
+@export_group("Fly")
+@export var fly_speed := 6.0
+@export var fly_run_speed := 14.0
+
 @onready var camera: Camera3D = $Camera3D
 @onready var placer: NotePlacer = $Camera3D/NotePlacer
 
 var _climbing := false
+var flying := false
+var _walk_layer := 0
+var _walk_mask := 0
 
 
 func _ready() -> void:
@@ -62,11 +71,33 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	elif ladder_enabled and not _climbing:
+	elif event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F:
+		set_flying(not flying)
+	elif ladder_enabled and not _climbing and not flying:
 		if event.is_action_pressed("ladder_up"):
 			_try_climb(1)
 		elif event.is_action_pressed("ladder_down"):
 			_try_climb(-1)
+
+
+## Fly mode: no gravity, no collision, Space / C for up / down. Lets a reviewer leave a model that has
+## no door and look at it from outside or above. Turning it off drops you back onto whatever is below.
+func set_flying(on: bool) -> void:
+	if on == flying:
+		return
+	flying = on
+	if on:
+		_walk_layer = collision_layer
+		_walk_mask = collision_mask
+		collision_layer = 0
+		collision_mask = 0
+		velocity = Vector3.ZERO
+		print("DesktopPlayer|INFO: fly mode on (F again to walk)")
+	else:
+		collision_layer = _walk_layer
+		collision_mask = _walk_mask
+		velocity = Vector3.ZERO
+		print("DesktopPlayer|INFO: fly mode off")
 
 
 func _look(relative: Vector2) -> void:
@@ -76,6 +107,20 @@ func _look(relative: Vector2) -> void:
 
 func _physics_process(delta: float) -> void:
 	if _climbing:
+		return
+	if flying:
+		if placer.ui_open:
+			return
+		var fi := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		var fdir := (camera.global_transform.basis * Vector3(fi.x, 0.0, fi.y))
+		var up := 0.0
+		if Input.is_action_pressed("ladder_up"):
+			up += 1.0
+		if Input.is_action_pressed("ladder_down"):
+			up -= 1.0
+		fdir += Vector3(0.0, up, 0.0)
+		var fs := fly_run_speed if Input.is_action_pressed("move_run") else fly_speed
+		global_position += fdir.normalized() * fs * delta if fdir.length() > 0.0 else Vector3.ZERO
 		return
 	if placer.ui_open:
 		velocity.x = 0.0
@@ -156,6 +201,8 @@ func _current_deck() -> int:
 func _on_teleport(cam_pos: Vector3, cam_rot: Vector3) -> void:
 	if _climbing:
 		return
+	if flying:
+		set_flying(false)
 	var feet := cam_pos - Vector3(0.0, camera.position.y, 0.0)
 	# A note written in VR by a shorter person would put the feet under the deck. Snap to the deck.
 	var deck := _nearest_landing_y(feet.y)

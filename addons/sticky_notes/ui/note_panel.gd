@@ -274,6 +274,12 @@ func _build_session_tab() -> void:
 	_file_dialog.file_selected.connect(_on_model_file_selected)
 	add_child(_file_dialog)
 
+	var orow := NoteUiKit.hbox(6)
+	orow.add_child(NoteUiKit.small("The built-in tower has no door to walk through."))
+	orow.add_child(NoteUiKit.spacer())
+	orow.add_child(NoteUiKit.button("Go outside", _on_go_outside))
+	orow.add_child(NoteUiKit.button("Back inside", _on_go_inside))
+	v.add_child(orow)
 	var sun_row := NoteUiKit.hbox(6)
 	sun_row.add_child(NoteUiKit.small("Sun azimuth"))
 	var sun := HSlider.new()
@@ -1184,6 +1190,23 @@ func _refresh_floors() -> void:
 			_status.text = "Landing for %s set where you stand" % str(fl["name"])))
 		row.add_child(NoteUiKit.button("✕", func() -> void: NoteManager.remove_floor(id), true))
 		_floors_box.add_child(row)
+
+
+## Outside the habitat, 14 m away, looking back at it (works on desktop and in VR).
+func _on_go_outside() -> void:
+	var b: AABB = NoteManager.model_bounds() if NoteManager.has_model() else AABB(Vector3(-3.3, 0, -3.3), Vector3(6.6, 8.5, 6.6))
+	var centre := b.get_center()
+	var dist := maxf(b.size.x, b.size.z) * 0.5 + 10.0
+	var pos := Vector3(centre.x, 1.65, centre.z + dist)
+	NoteManager.teleport_requested.emit(pos, Vector3(0.0, 0.0, 0.0))
+	_status.text = "Outside. Desktop: F toggles fly mode, Space / C go up and down."
+
+
+func _on_go_inside() -> void:
+	var lands: Array[Vector3] = NoteManager.floor_landings()
+	var p := lands[0] if not lands.is_empty() else Vector3.ZERO
+	NoteManager.teleport_requested.emit(p + Vector3(0.0, 1.65, 0.0), Vector3(0.0, 0.0, 0.0))
+	_status.text = "Back on the ground floor landing."
 
 
 func _on_add_floor_pressed() -> void:

@@ -485,6 +485,9 @@ background_mode = 2
 sky = SubResource("Sky_oqsj0")
 ambient_light_source = 3
 reflected_light_source = 2
+ssr_enabled = true
+fog_enabled = true
+volumetric_fog_enabled = true
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_floor"]
 render_priority = 0
@@ -665,7 +668,6 @@ environment = SubResource("Environment_lts4m")
 [node name="Floor" type="StaticBody3D" parent="." unique_id=1222995564]
 
 [node name="Mesh" type="MeshInstance3D" parent="Floor" unique_id=1788946882]
-visible = false
 material_override = SubResource("ShaderMaterial_floor")
 mesh = SubResource("PlaneMesh_floor")
 
@@ -676,7 +678,6 @@ shape = SubResource("BoxShape3D_floor")
 [node name="Table" type="StaticBody3D" parent="." unique_id=1222995565]
 process_mode = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, -0.6)
-visible = false
 
 [node name="Mesh" type="MeshInstance3D" parent="Table" unique_id=1507181728]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0029900074, 0)
@@ -763,7 +764,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.014873862, 0.04375124)
 material_override = SubResource("ShaderMaterial_074og")
 mesh = SubResource("TextMesh_cegan")
 
-[node name="LunarExterior" parent="." instance=ExtResource("22_lunar")]
+[node name="LunarExterior" parent="." unique_id=668661283 instance=ExtResource("22_lunar")]
 
 [node name="Passthrough" type="Node" parent="." unique_id=1290157622]
 script = ExtResource("6_pass")

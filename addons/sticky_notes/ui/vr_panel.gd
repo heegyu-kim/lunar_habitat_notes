@@ -498,6 +498,22 @@ func _build_session() -> void:
 	lrow.add_child(load)
 	_body.add_child(lrow)
 	_body.add_child(_big("Export HTML report", _on_export_pressed))
+	var out_row := NoteUiKit.hbox(6)
+	var go_out := _big("Go outside", func() -> void:
+		var b: AABB = NoteManager.model_bounds() if NoteManager.has_model() else AABB(Vector3(-3.3, 0, -3.3), Vector3(6.6, 8.5, 6.6))
+		var c := b.get_center()
+		NoteManager.teleport_requested.emit(Vector3(c.x, 1.65, c.z + maxf(b.size.x, b.size.z) * 0.5 + 10.0), Vector3.ZERO)
+		close())
+	go_out.size_flags_horizontal = SIZE_EXPAND_FILL
+	out_row.add_child(go_out)
+	var go_in := _big("Back inside", func() -> void:
+		var lands: Array[Vector3] = NoteManager.floor_landings()
+		var p := lands[0] if not lands.is_empty() else Vector3.ZERO
+		NoteManager.teleport_requested.emit(p + Vector3(0.0, 1.65, 0.0), Vector3.ZERO)
+		close())
+	go_in.size_flags_horizontal = SIZE_EXPAND_FILL
+	out_row.add_child(go_in)
+	_body.add_child(out_row)
 
 	_body.add_child(NoteUiKit.separator())
 	_body.add_child(NoteUiKit.label("Space model", F_SMALL, NoteUiKit.MUTED))

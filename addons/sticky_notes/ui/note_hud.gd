@@ -98,7 +98,7 @@ func set_hint(text: String) -> void:
 
 
 func set_hint_default() -> void:
-	_hint.text = "Hold N  place note      E  open      Tab  list      1 to 5  show / hide types      Right drag  look around while panel is open"
+	_hint.text = "Hold N  place note      E  open      Tab  list      1 to 5  show / hide types      F  fly / walk      Right drag  look around while panel is open"
 
 
 func _update_identity() -> void:
