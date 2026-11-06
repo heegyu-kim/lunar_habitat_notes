@@ -25,6 +25,7 @@ To run on the desktop even with a headset connected: `main.tscn` → **Main** no
 |---|---|
 | W A S D, mouse, Shift | Move, look, run |
 | **Space / C** | Near the ladder: climb **up / down** one deck |
+| **F** | Fly mode on / off: no gravity or collision, **Space / C** go up / down. The way out of a model with no door |
 | **N (hold)** | Translucent pin follows the surface you look at. **Release** to place a note (screenshot + editor) |
 | **E** | Open the note you are looking at |
 | **Tab** | Open / close the list |
