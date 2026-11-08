@@ -36,13 +36,14 @@ To run on the desktop even with a headset connected: `main.tscn` → **Main** no
 
 ### VR controls (Quest via Quest Link, or APK)
 
-The template's buttons are unchanged. Notes only use the **right trigger** and the **left wrist board**.
+Notes use the **right trigger** and the **left wrist board**. The minimap stays on the hand that opened it and shows live position and model landmarks. It does not use either trigger or change the ladder controls.
 
 | Input | Action |
 |---|---|
 | Left stick | Move (head direction, horizontal) |
 | Right stick left / right | Smooth continuous turn (further = faster). For snap turning: `XROrigin3D/XRMovement` → **Turn Mode** |
 | Right stick up / down | Scroll the wrist board |
+| Click either thumbstick | Cycle the handheld minimap: floor plan → 3D deck stack → closed |
 | **A** (right) / **X** (left) | Near the ladder: climb **up / down** one deck |
 | **B** (right) | Toggle passthrough |
 | Grip | Grab props (RigidBody) |
@@ -197,6 +198,18 @@ passthrough, microphone permission). Install the Godot OpenXR Vendors plugin (`a
 and the Android build template, then **Project → Export → Meta Quest 3 → Export Project**.
 
 ---
+
+### Optional habitat audio
+
+The public repo includes the audio wiring and runs with or without the sound files. With Python 3 and FFmpeg on your PATH, point the prep script at your authorized copies of the five WAVs in the Final Project sound-asset folder:
+
+```sh
+python3 tools/prepare_habitat_audio.py "/path/to/sound asset"
+```
+
+Expected filenames: `sticky note.wav`, `ambience fan:vent.wav` (or `ambience fan-vent.wav` on Windows), `liquid flowing in pipe.wav`, `machine beeping 1.wav`, and `machine beeping 2.wav`. Open or refresh Godot after preparing the files so it imports the WAVs before running or exporting. Keep the audio files local; the prep script does not download or publish any recordings.
+
+Place a note to hear its spatial paper cue. The vent and pipe loops rise toward deck 3; both machine sources peak on deck 2. The dry machine plays the first three seconds followed by ten seconds of silence, then repeats. The **Habitat Ambience** audio bus controls those loops independently of the note cue.
 
 ## 5. Distributing to the team
 
