@@ -20,6 +20,8 @@
 [ext_resource type="Script" uid="uid://b5nn35ofa5wxd" path="res://scripts/habitat_collision.gd" id="21_surf"]
 [ext_resource type="PackedScene" path="res://scenes/lunar_exterior.tscn" id="22_lunar"]
 
+[ext_resource type="Script" path="res://scripts/xr_minimap.gd" id="23_minimap"]
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_grab"]
 radius = 0.08
 
@@ -655,6 +657,14 @@ camera = NodePath("../XRCamera3D")
 up_controller = NodePath("../XRControllerRight")
 down_controller = NodePath("../XRControllerLeft")
 movement = NodePath("../XRMovement")
+
+[node name="XRMinimap" type="Node" parent="XROrigin3D" node_paths=PackedStringArray("camera", "left", "right", "habitat", "floor_bodies")]
+script = ExtResource("23_minimap")
+camera = NodePath("../XRCamera3D")
+left = NodePath("../XRControllerLeft")
+right = NodePath("../XRControllerRight")
+habitat = NodePath("../../LunarHabitat")
+floor_bodies = [NodePath("../../LunarHabitat/FloorL1"), NodePath("../../LunarHabitat/FloorL2"), NodePath("../../LunarHabitat/FloorL3")]
 
 [node name="XRNotes" type="Node" parent="XROrigin3D" unique_id=2080574940]
 script = ExtResource("20_notes")

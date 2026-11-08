@@ -36,13 +36,14 @@ To run on the desktop even with a headset connected: `main.tscn` → **Main** no
 
 ### VR controls (Quest via Quest Link, or APK)
 
-The template's buttons are unchanged. Notes only use the **right trigger** and the **left wrist board**.
+Notes use the **right trigger** and the **left wrist board**. The minimap stays on the hand that opened it and shows live position and model landmarks. It does not use either trigger or change the ladder controls.
 
 | Input | Action |
 |---|---|
 | Left stick | Move (head direction, horizontal) |
 | Right stick left / right | Smooth continuous turn (further = faster). For snap turning: `XROrigin3D/XRMovement` → **Turn Mode** |
 | Right stick up / down | Scroll the wrist board |
+| Click either thumbstick | Cycle the handheld minimap: floor plan → 3D deck stack → closed |
 | **A** (right) / **X** (left) | Near the ladder: climb **up / down** one deck |
 | **B** (right) | Toggle passthrough |
 | Grip | Grab props (RigidBody) |
