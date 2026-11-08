@@ -22,6 +22,9 @@
 
 [ext_resource type="Script" path="res://scripts/xr_minimap.gd" id="23_minimap"]
 
+[ext_resource type="Script" path="res://scripts/note_placement_audio.gd" id="24_note_sfx"]
+[ext_resource type="PackedScene" path="res://scenes/habitat_ambience.tscn" id="26_ambience"]
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_grab"]
 radius = 0.08
 
@@ -585,6 +588,12 @@ data = PackedVector3Array(-2.6376, -0.009, 1.5807999, -2.7798, -0.009, 1.3147, -
 [node name="Main" type="Node3D" unique_id=500145794]
 script = ExtResource("1_ig7tw")
 
+[node name="NotePlacementAudio" type="AudioStreamPlayer3D" parent="."]
+volume_db = -7.0
+unit_size = 2.5
+max_distance = 20.0
+script = ExtResource("24_note_sfx")
+
 [node name="XROrigin3D" type="XROrigin3D" parent="." unique_id=1033207768]
 
 [node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D" unique_id=807774865]
@@ -811,3 +820,5 @@ shape = SubResource("ConcavePolygonShape3D_074og")
 
 [node name="SurfaceCollision" type="Node" parent="LunarHabitat" unique_id=121640256]
 script = ExtResource("21_surf")
+
+[node name="HabitatAmbience" parent="." instance=ExtResource("26_ambience")]

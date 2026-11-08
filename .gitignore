@@ -26,3 +26,7 @@ desktop.ini
 /tools/ffmpeg.exe
 /tools/ffmpeg
 ffmpeg-*.log
+
+# Local sound-library assets: prepare with tools/prepare_habitat_audio.py.
+/assets/audio/*.wav
+/assets/audio/*.wav.import
