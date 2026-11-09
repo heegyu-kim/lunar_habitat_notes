@@ -207,7 +207,7 @@ The public repo includes the audio wiring and runs with or without the sound fil
 python3 tools/prepare_habitat_audio.py "/path/to/sound asset"
 ```
 
-Expected filenames: `sticky note.wav`, `ambience fan:vent.wav` (or `ambience fan-vent.wav` on Windows), `liquid flowing in pipe.wav`, `machine beeping 1.wav`, and `machine beeping 2.wav`. Open or refresh Godot after preparing the files so it imports the WAVs before running or exporting. Keep the audio files local; the prep script does not download or publish any recordings.
+Expected filenames: `sticky note.wav`, `ambience fan:vent.wav` (or `ambience fan-vent.wav` on Windows), `liquid flowing in pipe.wav`, `machine beeping 1.wav`, and `machine beeping 2.wav`. `opening sound.wav` is optional: when present it becomes the sting played once at app start. Open or refresh Godot after preparing the files so it imports the WAVs before running or exporting. Keep the audio files local; the prep script does not download or publish any recordings.
 
 Place a note to hear its spatial paper cue. The vent and pipe loops rise toward deck 3; both machine sources peak on deck 2. The dry machine plays the first three seconds followed by ten seconds of silence, then repeats. The **Habitat Ambience** audio bus controls those loops independently of the note cue.
 

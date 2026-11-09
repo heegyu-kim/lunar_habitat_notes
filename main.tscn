@@ -19,11 +19,10 @@
 [ext_resource type="Script" uid="uid://mn0ebf0iwpyo" path="res://scripts/xr_notes.gd" id="20_notes"]
 [ext_resource type="Script" uid="uid://b5nn35ofa5wxd" path="res://scripts/habitat_collision.gd" id="21_surf"]
 [ext_resource type="PackedScene" path="res://scenes/lunar_exterior.tscn" id="22_lunar"]
-
-[ext_resource type="Script" path="res://scripts/xr_minimap.gd" id="23_minimap"]
-
-[ext_resource type="Script" path="res://scripts/note_placement_audio.gd" id="24_note_sfx"]
+[ext_resource type="Script" uid="uid://ba6pi30e7ipj5" path="res://scripts/xr_minimap.gd" id="23_minimap"]
+[ext_resource type="Script" uid="uid://c1iup7584gdm2" path="res://scripts/note_placement_audio.gd" id="24_note_sfx"]
 [ext_resource type="PackedScene" path="res://scenes/habitat_ambience.tscn" id="26_ambience"]
+[ext_resource type="Script" path="res://scripts/opening_sound.gd" id="27_opening"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_grab"]
 radius = 0.08
@@ -588,7 +587,11 @@ data = PackedVector3Array(-2.6376, -0.009, 1.5807999, -2.7798, -0.009, 1.3147, -
 [node name="Main" type="Node3D" unique_id=500145794]
 script = ExtResource("1_ig7tw")
 
-[node name="NotePlacementAudio" type="AudioStreamPlayer3D" parent="."]
+[node name="OpeningSound" type="AudioStreamPlayer" parent="."]
+volume_db = -4.0
+script = ExtResource("27_opening")
+
+[node name="NotePlacementAudio" type="AudioStreamPlayer3D" parent="." unique_id=1634933891]
 volume_db = -7.0
 unit_size = 2.5
 max_distance = 20.0
@@ -667,7 +670,7 @@ up_controller = NodePath("../XRControllerRight")
 down_controller = NodePath("../XRControllerLeft")
 movement = NodePath("../XRMovement")
 
-[node name="XRMinimap" type="Node" parent="XROrigin3D" node_paths=PackedStringArray("camera", "left", "right", "habitat", "floor_bodies")]
+[node name="XRMinimap" type="Node" parent="XROrigin3D" unique_id=1450817174 node_paths=PackedStringArray("camera", "left", "right", "habitat", "floor_bodies")]
 script = ExtResource("23_minimap")
 camera = NodePath("../XRCamera3D")
 left = NodePath("../XRControllerLeft")
@@ -821,4 +824,4 @@ shape = SubResource("ConcavePolygonShape3D_074og")
 [node name="SurfaceCollision" type="Node" parent="LunarHabitat" unique_id=121640256]
 script = ExtResource("21_surf")
 
-[node name="HabitatAmbience" parent="." instance=ExtResource("26_ambience")]
+[node name="HabitatAmbience" parent="." unique_id=2097539424 instance=ExtResource("26_ambience")]

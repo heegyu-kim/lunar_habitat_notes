@@ -51,6 +51,9 @@ def main():
         encode("machine beeping 1.wav", "machine_dry_3s_10s_pause.wav",
                "-map", "0:a:0", "-ac", "1", "-ar", "48000", "-af", "atrim=end=3,apad=pad_dur=10")
         encode("sticky note.wav", "sticky_note_placed.wav", "-map", "0:a:0", "-ac", "1")
+        # Optional opening sting (played once at app start by scripts/opening_sound.gd).
+        if (args.source / "opening sound.wav").is_file():
+            encode("opening sound.wav", "opening.wav", "-map", "0:a:0", "-ac", "2", "-ar", "48000")
         for output in sorted(staging.glob("*.wav")):
             shutil.move(str(output), str(destination / output.name))
             print(destination / output.name)
