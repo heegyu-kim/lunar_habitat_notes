@@ -30,3 +30,6 @@ ffmpeg-*.log
 # Local sound-library assets: prepare with tools/prepare_habitat_audio.py.
 /assets/audio/*.wav
 /assets/audio/*.wav.import
+
+# Blender working files converted from the glb models (tools/glb_to_blend_fbx.py)
+/blender/
