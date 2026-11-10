@@ -16,7 +16,7 @@ import sys
 
 import bmesh
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools", "design"))
@@ -243,18 +243,23 @@ boolean(_plate, _cut); drop(_cut)
 _coam = prism("_hatch coaming mesh", rrect(H["coam_w"], H["coam_h"], 0.34), -0.05 - H["depth"], -0.05, "YZ", TMP, M["hatch"])
 _cut = prism("_cut", rrect(H["w"], H["h"], H["corner_r"]), -0.5, 0.2, "YZ", TMP)
 boolean(_coam, _cut); drop(_cut)
-_leaf = prism("_hatch leaf mesh", [(-0.06 - H["leaf_w"], -H["leaf_h"] / 2), (-0.06, -H["leaf_h"] / 2), (-0.06, H["leaf_h"] / 2), (-0.06 - H["leaf_w"], H["leaf_h"] / 2)], 0.0, H["leaf_t"], "XZ", TMP, M["hatch"],
-              origin=Vector((0, -H["w"] / 2 - 0.07 - H["leaf_t"], 0)))
+# Detailed door (tools/design/hatch_door.py): seal plane on the cabin face of the coaming, hinged, shown open.
+import hatch_door  # noqa: E402
+_door = hatch_door.build(TMP, os.path.join(OUT, "textures"), "Hatch door H-1 mesh", W=H["leaf_w"], H=H["leaf_h"], R=0.24)
+_hinge = Vector(_door["hinge_local"])
+DOOR_OPEN = Matrix.Translation((-0.05 - H["depth"], 0, 0)) @ Matrix.Translation(_hinge) @ Matrix.Rotation(math.radians(95), 4, "Z") @ Matrix.Translation(-_hinge)
 
 
 def hatch(hid, desc, x, z, az, with_plate=True):
     root = empty(f"{hid} | {desc}", W(x, z, P.PORT_H), C_H, 0.4, "ARROWS")
     root.rotation_euler = (0, 0, math.radians(az))
-    parts = [("coaming 1.30x1.80 (opening 1.02x1.52)", _coam), ("leaf 1.10x1.60 (open 90 deg, into the module)", _leaf)]
+    parts = [("coaming 1.30x1.80 (opening 1.02x1.52)", _coam), ("door 1.10x1.60 (open 95 deg, into the module)", _door)]
     if with_plate:
         parts.insert(0, ("plate d2.10", _plate))
     for nm, src in parts:
         ob = bpy.data.objects.new(f"{hid} | {nm}", src.data); C_H.objects.link(ob); ob.parent = root
+        if src is _door:
+            ob.matrix_local = DOOR_OPEN
     return root
 
 
@@ -462,6 +467,7 @@ n_mesh = sum(1 for o in bpy.data.objects if o.type == "MESH")
 print("OBJECTS meshes=%d empties=%d  self-check=%s" % (n_mesh, sum(1 for o in bpy.data.objects if o.type == "EMPTY"), "PASS" if ok else "FAIL"))
 
 blend = os.path.join(OUT, "base_camp_design_reference.blend")
+bpy.ops.file.pack_all()
 bpy.ops.wm.save_as_mainfile(filepath=blend, compress=True)
 print("WROTE", blend)
 glb = os.path.join(OUT, "base_camp_design_reference.glb")
