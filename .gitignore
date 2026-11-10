@@ -33,3 +33,7 @@ ffmpeg-*.log
 
 # Blender working files converted from the glb models (tools/glb_to_blend_fbx.py)
 /blender/
+
+# Python caches and Godot import stubs under docs
+__pycache__/
+/docs/**/*.import
