@@ -11,7 +11,7 @@ from matplotlib.patches import Circle, Rectangle, Polygon, Wedge, FancyArrowPatc
 matplotlib.rcParams["font.family"] = ["Malgun Gothic", "NanumGothic", "Arial"]
 matplotlib.rcParams["axes.unicode_minus"] = False
 
-OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "diagrams")
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "diagrams_v1_superseded")  # superseded by tools/draw_design.py
 os.makedirs(OUT, exist_ok=True)
 
 C_METAL = "#8e949c"; C_INFL = "#d9cfb8"; C_FLOOR = "#e9e9e9"; C_WALL = "#404040"
