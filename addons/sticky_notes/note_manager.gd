@@ -77,6 +77,8 @@ func _save_identity() -> void:
 	cfg.set_value("identity", "role", author_role)
 	cfg.set_value("audio", "mic_device", mic_device)
 	cfg.set_value("audio", "ffmpeg_device", ffmpeg_audio_device)
+	if _record_mode_chosen:      # only remember an explicit choice, so a later default change still applies
+		cfg.set_value("audio", "record_mode", record_mode)
 	cfg.set_value("space", "model", space.get("model", {}))
 	cfg.set_value("space", "last_session", last_session)
 	cfg.save(IDENTITY_FILE)
@@ -90,6 +92,9 @@ func _load_identity() -> void:
 	author_role = int(cfg.get_value("identity", "role", author_role))
 	mic_device = str(cfg.get_value("audio", "mic_device", ""))
 	ffmpeg_audio_device = str(cfg.get_value("audio", "ffmpeg_device", ""))
+	if cfg.has_section_key("audio", "record_mode"):
+		record_mode = str(cfg.get_value("audio", "record_mode"))
+		_record_mode_chosen = true
 	var m: Variant = cfg.get_value("space", "model", {})
 	if m is Dictionary and str(m.get("file", "")) != "":
 		_pending_model = m
@@ -508,6 +513,8 @@ func load_screenshot(file: String) -> Texture2D:
 func start_clip(note_id: String) -> bool:
 	if is_clip_recording:
 		return false
+	if record_mode == "holo":
+		return _start_holo(note_id)
 	_clip_id = note_id
 	_clip_dir = MEDIA_DIR + "clip_%s/" % note_id
 	DirAccess.make_dir_recursive_absolute(_clip_dir)
@@ -555,6 +562,11 @@ func _process(delta: float) -> void:
 	if not is_clip_recording:
 		return
 	clip_elapsed += delta
+	if _holo != null:
+		_sample_holo()
+		if clip_elapsed >= HOLO_MAX_SEC:
+			stop_clip()
+		return
 	if clip_mode == "ffmpeg" and _job != null:
 		_pump_pipe()
 		if clip_elapsed >= CLIP_MAX_SEC:
@@ -613,6 +625,8 @@ func stop_clip() -> Dictionary:
 	if not is_clip_recording:
 		return {}
 	is_clip_recording = false
+	if _holo != null:
+		return _stop_holo()
 	_rec_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	if clip_mode == "ffmpeg" and _job != null:
 		return _stop_ffmpeg_clip()
@@ -847,6 +861,12 @@ func cancel_clip() -> void:
 	if not is_clip_recording:
 		return
 	is_clip_recording = false
+	if _holo != null:
+		_holo = null
+		cancel_recording()
+		_remove_dir(_holo_dir)
+		recording_state_changed.emit(false)
+		return
 	_rec_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	_rec_vp.size = Vector2i(REC_W, REC_H)
 	cancel_recording()
@@ -887,6 +907,199 @@ func load_clip(clip_file: String) -> Dictionary:
 
 func clip_frame_path(meta: Dictionary, index: int) -> String:
 	return "%sf%04d.jpg" % [meta["dir"], clampi(index, 1, int(meta["frames"]))]
+
+
+# ---------------- Holonotes (head + hands + voice) ----------------
+# Same entry points as clips (start_clip / stop_clip / cancel_clip, is_clip_recording, clip_elapsed),
+# so the UI and the trigger-hold flow work unchanged. record_mode picks which one runs.
+
+const HOLO_MAX_SEC := 60.0
+
+## "holo" records a Holonote, "video" records a camera clip (ffmpeg or frames). Video is the fallback.
+var record_mode: String = "holo"
+var _record_mode_chosen: bool = false
+## What a Holonote samples. Registered by the XR rig (head + both hands) or the desktop player (head only).
+## Empty entries fall back to the current camera for the head and "not tracked" for the hands.
+var holo_sources: Dictionary = {}         # "head" / "left" / "right" -> Node3D
+var _holo: HoloMotion = null              # the recording in progress
+var _holo_id: String = ""
+var _holo_dir: String = ""
+var _holo_next_t: float = 0.0
+var _holo_has_audio: bool = false
+
+
+func register_holo_sources(head: Node3D, left: Node3D = null, right: Node3D = null) -> void:
+	holo_sources = {"head": head, "left": left, "right": right}
+
+
+## "holonote" or "clip": the word the record buttons use.
+func record_noun() -> String:
+	return "holonote" if record_mode == "holo" else "clip"
+
+
+## Copies a stop_clip() result onto a note. A new recording replaces the old one of either kind;
+## the screenshot is kept when the recording has none of its own.
+func apply_recording(target: NoteData, result: Dictionary) -> void:
+	if target == null or result.is_empty():
+		return
+	target.clip_file = str(result.get("clip_file", ""))
+	target.holo_file = str(result.get("holo_file", ""))
+	target.audio_file = str(result.get("audio_file", ""))
+	var shot := str(result.get("screenshot_file", ""))
+	if shot != "":
+		target.screenshot_file = shot
+
+
+func set_record_mode(mode: String) -> void:
+	if mode != "holo" and mode != "video":
+		return
+	record_mode = mode
+	_record_mode_chosen = true
+	_save_identity()
+
+
+func _holo_pose(track: String) -> Variant:
+	var node: Node3D = holo_sources.get(track) as Node3D
+	if node == null or not is_instance_valid(node) or not node.is_inside_tree():
+		if track == "head":
+			var cam := get_viewport().get_camera_3d()
+			return cam.global_transform if cam != null else null
+		return null
+	if node is XRController3D and not (node as XRController3D).get_has_tracking_data():
+		return null
+	if not node.is_visible_in_tree():
+		return null
+	return node.global_transform
+
+
+func _sample_holo() -> void:
+	while clip_elapsed >= _holo_next_t:
+		_holo_next_t += 1.0 / _holo.hz
+		_holo.add_frame({
+			"head": _holo_pose("head"),
+			"left": _holo_pose("left"),
+			"right": _holo_pose("right"),
+		})
+
+
+func _start_holo(note_id: String) -> bool:
+	_holo_id = note_id
+	_holo_dir = MEDIA_DIR + "holo_%s/" % note_id
+	DirAccess.make_dir_recursive_absolute(_holo_dir)
+	_holo = HoloMotion.new()
+	_holo_next_t = 0.0
+	clip_elapsed = 0.0
+	last_clip_warning = ""
+	_holo_has_audio = start_recording()
+	if not _holo_has_audio:
+		last_clip_warning = "microphone could not be opened, recording motion without sound"
+	_sample_holo()                                  # frame 0 = where the author started
+	capture_screenshot("holo_" + note_id)           # thumbnail, written in the background
+	is_clip_recording = true
+	recording_state_changed.emit(true)
+	return true
+
+
+## Returns {holo_file, audio_file, screenshot_file, clip_file: ""}. Empty if nothing was recorded.
+func _stop_holo() -> Dictionary:
+	_sample_holo()                                  # catch up to the stop time
+	var motion := _holo
+	_holo = null
+	var audio_rel := ""
+	if _holo_has_audio:
+		var rec := _finish_recording()
+		if rec != null and rec.save_to_wav(_holo_dir + "voice.wav") == OK:
+			audio_rel = "holo_%s/voice.wav" % _holo_id
+			_audio_cache[audio_rel] = rec
+		_holo_has_audio = false
+	recording_state_changed.emit(false)
+	if motion.frame_count < 2:
+		_remove_dir(_holo_dir)
+		return {}
+	motion.has_audio = audio_rel != ""
+	var f := FileAccess.open(_holo_dir + "holo.json", FileAccess.WRITE)
+	if f == null:
+		push_warning("StickyNotes: could not write holo.json")
+		return {}
+	f.store_string(JSON.stringify(motion.to_dict()))
+	f.close()
+	_holo_cache.erase("holo_%s/holo.json" % _holo_id)
+	var shot := "shot_holo_%s.png" % _holo_id
+	return {
+		"holo_file": "holo_%s/holo.json" % _holo_id,
+		"audio_file": audio_rel,
+		"screenshot_file": shot if FileAccess.file_exists(MEDIA_DIR + shot) else "",
+		"clip_file": "",
+	}
+
+
+## Loads media/<holo_file>. Null if missing or unreadable. audio_file is filled in when there is voice.
+var _holo_cache: Dictionary = {}          # holo_file -> HoloMotion
+
+
+func load_holo(holo_file: String) -> HoloMotion:
+	if _holo_cache.has(holo_file):
+		return _holo_cache[holo_file]
+	if holo_file == "" or not FileAccess.file_exists(MEDIA_DIR + holo_file):
+		return null
+	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(MEDIA_DIR + holo_file))
+	if not (d is Dictionary):
+		return null
+	var m := HoloMotion.from_dict(d)
+	if m != null and m.has_audio:
+		m.audio_file = holo_file.get_base_dir() + "/voice.wav"
+	if m != null:
+		_holo_cache[holo_file] = m
+	return m
+
+
+## Ghost playback. One HoloPlayer, created on first use, lives under NoteManager (top-level 3D).
+signal holo_playback_changed(note_id: String, playing: bool)
+
+var _holo_player: HoloPlayer = null
+
+
+func _ensure_holo_player() -> HoloPlayer:
+	if _holo_player == null:
+		_holo_player = HoloPlayer.new()
+		add_child(_holo_player)
+		_holo_player.started.connect(func(id: String) -> void: holo_playback_changed.emit(id, true))
+		_holo_player.finished.connect(func(id: String) -> void: holo_playback_changed.emit(id, false))
+	return _holo_player
+
+
+## Plays a note's holonote as a ghost. move_viewer = true asks the player (desktop) to step to a
+## spot behind the author first; the VR theater does its own fade + teleport and passes false.
+func play_holo(note: NoteData, move_viewer: bool = true) -> bool:
+	if note == null or not note.has_holo() or is_clip_recording:
+		return false
+	var m := load_holo(note.holo_file)
+	if m == null:
+		return false
+	var p := _ensure_holo_player()
+	if move_viewer:
+		var spot := p.viewer_spot(m)
+		teleport_requested.emit(spot[0], spot[1])
+	return p.play(note, m)
+
+
+func stop_holo_playback() -> void:
+	if _holo_player != null:
+		_holo_player.stop()
+
+
+func is_holo_playing(note_id: String = "") -> bool:
+	if _holo_player == null or not _holo_player.playing:
+		return false
+	return note_id == "" or _holo_player.note_id == note_id
+
+
+## [camera_position, camera_rotation] to watch a note's holonote from, or [] if it has none.
+func holo_viewer_spot(note: NoteData) -> Array:
+	var m := load_holo(note.holo_file) if note != null else null
+	if m == null:
+		return []
+	return _ensure_holo_player().viewer_spot(m)
 
 
 ## 종료할 때 녹화 중이면 취소하고 스레드를 정리한다.
@@ -1855,6 +2068,9 @@ func _delete_media(note: NoteData) -> void:
 		_audio_cache.erase(file)
 	if note.clip_file != "":
 		_remove_dir(MEDIA_DIR + note.clip_file.get_base_dir())
+	if note.holo_file != "":
+		_holo_cache.erase(note.holo_file)
+		_remove_dir(MEDIA_DIR + note.holo_file.get_base_dir())
 
 
 func _remove_dir(path: String) -> void:

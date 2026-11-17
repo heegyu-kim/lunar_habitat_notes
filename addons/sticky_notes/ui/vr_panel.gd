@@ -275,9 +275,9 @@ func _build_empty() -> void:
 func _build_editor() -> void:
 	var rec := NoteManager.is_clip_recording
 	if rec:
-		_set_status("●  Recording what you see and say.  Press Stop or release grip.", NoteData.TYPE_COLORS[0])
+		_set_status(("●  Recording your voice and movement." if NoteManager.record_mode == "holo" else "●  Recording what you see and say.") + "  Press Stop or release grip.", NoteData.TYPE_COLORS[0])
 	elif note.has_media():
-		_set_status("Clip attached. Pick a type, then press Save (or A).")
+		_set_status("%s attached. Pick a type, then press Save (or A)." % NoteManager.record_noun().capitalize())
 	else:
 		_set_status("New note on %s.  Press Record (or hold grip) and talk." % note.anchor_name)
 
@@ -289,7 +289,7 @@ func _build_editor() -> void:
 	_type_row.set_selected(note.type)
 	_body.add_child(_type_row)
 
-	_rec_btn = _big("■  Stop" if rec else ("●  Record again" if note.has_media() else "●  Record clip"), _on_record_pressed, NoteData.TYPE_COLORS[0])
+	_rec_btn = _big("■  Stop" if rec else ("●  Record again" if note.has_media() else "●  Record " + NoteManager.record_noun()), _on_record_pressed, NoteData.TYPE_COLORS[0])
 	_rec_btn.custom_minimum_size = Vector2(0, BTN_H + 16)
 	_rec_btn.add_theme_font_size_override("font_size", F_TITLE)
 	_rec_btn.disabled = false
@@ -665,6 +665,15 @@ func _build_session() -> void:
 
 	_body.add_child(NoteUiKit.separator())
 	_body.add_child(NoteUiKit.label("Recording", F_SMALL, NoteUiKit.MUTED))
+	var rm := NoteUiKit.ChoiceRow.new(["Holonote (voice + motion)", "Video clip"])
+	for b in rm.get_children():
+		if b is Button:
+			b.custom_minimum_size = Vector2(0, BTN_H_SMALL)
+			b.add_theme_font_size_override("font_size", F_SMALL)
+	rm.set_selected(0 if NoteManager.record_mode == "holo" else 1)
+	rm.changed.connect(func(i: int) -> void: NoteManager.set_record_mode("holo" if i == 0 else "video"))
+	_body.add_child(rm)
+	_body.add_child(NoteUiKit.label("Holonotes record your voice, head and hands, and play back as a ghost in the space. Video is the old camera recording.", F_SMALL, NoteUiKit.FG, true))
 	if NoteManager.clip_mode == "ffmpeg":
 		_body.add_child(NoteUiKit.label("Real video via ffmpeg. Fallback microphone for ffmpeg (used only if Godot cannot open a mic):", F_SMALL, NoteUiKit.FG, true))
 		var fo := OptionButton.new()
@@ -744,23 +753,17 @@ func _stop_and_attach() -> void:
 	var result := NoteManager.stop_clip()
 	if mode == Mode.EDIT and note != null:
 		if not result.is_empty():
-			note.clip_file = result["clip_file"]
-			note.audio_file = result["audio_file"]
-			note.screenshot_file = result["screenshot_file"]
+			NoteManager.apply_recording(note, result)
 		if _type_row != null:
 			note.type = _type_row.selected
 	elif mode == Mode.VIEW and _pending_reply != null:
 		if not result.is_empty():
-			_pending_reply.clip_file = result["clip_file"]
-			_pending_reply.audio_file = result["audio_file"]
-			_pending_reply.screenshot_file = result["screenshot_file"]
+			NoteManager.apply_recording(_pending_reply, result)
 			NoteManager.add_note(_pending_reply)
 		_pending_reply = null
 	elif mode == Mode.VIEW and note != null:
 		if not result.is_empty():
-			note.clip_file = result["clip_file"]
-			note.audio_file = result["audio_file"]
-			note.screenshot_file = result["screenshot_file"]
+			NoteManager.apply_recording(note, result)
 			NoteManager.update_note(note)
 	_rebuild()
 
@@ -791,7 +794,7 @@ func _on_save_pressed() -> void:
 	if NoteManager.is_clip_recording:
 		_stop_and_attach()
 	if not note.has_media():
-		_set_status("Record a clip first.", NoteData.TYPE_COLORS[0])
+		_set_status("Record a %s first." % NoteManager.record_noun(), NoteData.TYPE_COLORS[0])
 		return
 	if _type_row != null:
 		note.type = _type_row.selected

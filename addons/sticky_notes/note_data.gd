@@ -42,6 +42,7 @@ var camera_rotation: Vector3 = Vector3.ZERO # 작성 당시 시선 (오일러, �
 var screenshot_file: String = ""   # 썸네일 png (클립이 있으면 첫 프레임)
 var audio_file: String = ""        # 음성 wav (클립이 있으면 클립 폴더 안의 것)
 var clip_file: String = ""         # 화면+음성 클립. "clip_<id>/clip.json"
+var holo_file: String = ""         # Holonote (head + hands + voice). "holo_<id>/holo.json"
 
 var created_at: String = ""                 # "YYYY-MM-DD HH:MM:SS"
 
@@ -88,8 +89,12 @@ func has_clip() -> bool:
 	return clip_file != ""
 
 
+func has_holo() -> bool:
+	return holo_file != ""
+
+
 func has_media() -> bool:
-	return clip_file != "" or audio_file != ""
+	return clip_file != "" or audio_file != "" or holo_file != ""
 
 
 func is_reply() -> bool:
@@ -139,6 +144,7 @@ func to_dict() -> Dictionary:
 		"screenshot_file": screenshot_file,
 		"audio_file": audio_file,
 		"clip_file": clip_file,
+		"holo_file": holo_file,
 		"created_at": created_at,
 		"zone_id": zone_id,
 	}
@@ -161,6 +167,7 @@ static func from_dict(d: Dictionary) -> NoteData:
 	n.screenshot_file = str(d.get("screenshot_file", ""))
 	n.audio_file = str(d.get("audio_file", ""))
 	n.clip_file = str(d.get("clip_file", ""))
+	n.holo_file = str(d.get("holo_file", ""))
 	n.created_at = str(d.get("created_at", ""))
 	n.zone_id = str(d.get("zone_id", ""))
 	if n.id == "":

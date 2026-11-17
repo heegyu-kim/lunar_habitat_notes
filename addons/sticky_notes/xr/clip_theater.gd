@@ -33,6 +33,7 @@ var _return_pos: Vector3 = Vector3.ZERO
 var _return_basis: Basis = Basis.IDENTITY
 var _fade_target: float = 0.0
 var _fade_value: float = 0.0
+var _holo: bool = false          # playing a holonote (ghost in the world) instead of a video screen
 
 
 func _init() -> void:
@@ -92,6 +93,9 @@ func attach(cam: XRCamera3D, org: XROrigin3D) -> void:
 func enter(note: NoteData) -> void:
 	if active or camera == null:
 		return
+	if note.has_holo():
+		_enter_holo(note)
+		return
 	if not _frames.load(note) or not _frames.ready:
 		return
 	active = true
@@ -113,17 +117,37 @@ func enter(note: NoteData) -> void:
 	await _fade_to(0.0)
 
 
+## Holonote: fade, stand behind the author's starting point, watch their ghost, fade back.
+func _enter_holo(note: NoteData) -> void:
+	var spot := NoteManager.holo_viewer_spot(note)
+	if spot.is_empty():
+		return
+	active = true
+	_holo = true
+	started.emit()
+	_return_pos = origin.global_position
+	_return_basis = origin.global_transform.basis
+	await _fade_to(1.0)
+	_teleport(spot[0], spot[1])
+	_playing = true
+	NoteManager.play_holo(note, false)
+	await _fade_to(0.0)
+
+
 func exit() -> void:
 	if not active or not _playing:
 		return
 	_playing = false
 	_audio.stop()
+	if _holo:
+		NoteManager.stop_holo_playback()
 	await _fade_to(1.0)
 	_screen.visible = false
 	origin.global_position = _return_pos
 	origin.global_transform.basis = _return_basis
 	await _fade_to(0.0)
 	active = false
+	_holo = false
 	finished.emit()
 
 
@@ -134,6 +158,10 @@ func _process(delta: float) -> void:
 		_fade_mat.albedo_color = Color(0, 0, 0, _fade_value)
 		_fade.visible = _fade_value > 0.001
 	if not _playing:
+		return
+	if _holo:
+		if not NoteManager.is_holo_playing():
+			exit()
 		return
 	_t = _audio.get_playback_position() if _has_audio and _audio.playing else _t + delta
 	_screen_mat.albedo_texture = _frames.texture_at(_t)

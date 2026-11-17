@@ -18,6 +18,7 @@ var _note: NoteData = null
 var _playing: bool = false
 var _t: float = 0.0
 var _has_audio: bool = false
+var _holo: HoloMotion = null      # set when the note has a holonote (played as a ghost, not here)
 
 
 func _init(height: float = 180.0, is_big: bool = false, is_immersive: bool = false) -> void:
@@ -52,6 +53,17 @@ func _init(height: float = 180.0, is_big: bool = false, is_immersive: bool = fal
 
 func _ready() -> void:
 	NoteManager.clip_ready.connect(_on_clip_ready)
+	NoteManager.holo_playback_changed.connect(_on_holo_playback)
+
+
+func _on_holo_playback(id: String, on: bool) -> void:
+	if _holo == null or _note == null or id != _note.id:
+		return
+	_btn.text = "■  Stop" if on else _holo_label()
+
+
+func _holo_label() -> String:
+	return "▶  Play holonote"
 
 
 func _on_clip_ready(id: String) -> void:
@@ -69,6 +81,16 @@ func load_note(note: NoteData) -> bool:
 	_image.texture = null
 	_btn.visible = false
 	_time.text = ""
+	_holo = NoteManager.load_holo(note.holo_file) if note.has_holo() else null
+
+	if _holo != null:
+		_image.texture = NoteManager.load_screenshot(note.screenshot_file)
+		_btn.visible = true
+		_btn.text = "■  Stop" if NoteManager.is_holo_playing(note.id) else _holo_label()
+		_time.text = "%.0fs" % _holo.duration
+		if not _holo.has_audio:
+			_time.text += "  ·  no voice"
+		return true
 
 	if _frames.load(note):
 		if not _frames.ready:
@@ -96,6 +118,14 @@ func load_note(note: NoteData) -> bool:
 
 
 func _toggle() -> void:
+	if _holo != null:
+		if NoteManager.is_holo_playing(_note.id):
+			NoteManager.stop_holo_playback()
+		elif immersive:
+			play_requested.emit(_note)        # VR: the theater fades and moves you behind the ghost
+		else:
+			NoteManager.play_holo(_note)      # desktop: step behind the ghost and watch
+		return
 	if immersive and _frames.ready:
 		play_requested.emit(_note)
 		return

@@ -207,7 +207,7 @@ func _process(delta: float) -> void:
 					_haptic(right, 0.6)
 				else:
 					var left_s := ceili(HOLD_TO_RECORD - _hold_t)
-					_tip_label.text = "Hold %d s to record screen and voice" % left_s
+					_tip_label.text = ("Hold %d s to record a holonote" if NoteManager.record_mode == "holo" else "Hold %d s to record screen and voice") % left_s
 					if int(_hold_t * 4.0) != int((_hold_t - delta) * 4.0):
 						_haptic(right, 0.08)
 		elif kind == "surface":

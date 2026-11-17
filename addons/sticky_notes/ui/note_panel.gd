@@ -366,6 +366,16 @@ func _build_session_tab() -> void:
 	v.add_child(rrow)
 
 	v.add_child(NoteUiKit.separator())
+	v.add_child(NoteUiKit.label("Recording", 14))
+	var rm := NoteUiKit.ChoiceRow.new(["Holonote (voice + motion)", "Video clip"])
+	rm.set_selected(0 if NoteManager.record_mode == "holo" else 1)
+	rm.changed.connect(func(i: int) -> void:
+		NoteManager.set_record_mode("holo" if i == 0 else "video")
+		_update_rec_button())
+	v.add_child(rm)
+	v.add_child(NoteUiKit.small("Holonotes record your voice and where you look and point, and play back as a ghost in the space. Video is the old camera recording."))
+
+	v.add_child(NoteUiKit.separator())
 	v.add_child(NoteUiKit.label("Microphone", 14))
 	v.add_child(NoteUiKit.small("Used for clips and voice notes. Pick the headset mic and speak: the bar must move. If it never moves, the device is not delivering sound (Quest Link mic, Windows privacy, sound settings)."))
 	_mic_opt = OptionButton.new()
@@ -548,7 +558,7 @@ func _build_editor() -> void:
 	_note_box.add_child(_text)
 
 	var arow := NoteUiKit.hbox(6)
-	_rec_btn = NoteUiKit.button("●  Record clip", _on_record_pressed)
+	_rec_btn = NoteUiKit.button("●  Record " + NoteManager.record_noun(), _on_record_pressed)
 	arow.add_child(_rec_btn)
 	_rec_time = NoteUiKit.label("", 12, NoteUiKit.MUTED)
 	_rec_time.size_flags_vertical = SIZE_SHRINK_CENTER
@@ -622,7 +632,7 @@ func _build_viewer() -> void:
 	_reply_edit.text_submitted.connect(func(_t: String) -> void: _send_reply())
 	crow.add_child(_reply_edit)
 	_reply_rec = NoteUiKit.button("●", _on_reply_record_pressed)
-	_reply_rec.tooltip_text = "Record a clip reply"
+	_reply_rec.tooltip_text = "Record a %s reply" % NoteManager.record_noun()
 	crow.add_child(_reply_rec)
 	crow.add_child(NoteUiKit.button("Send", _send_reply))
 	_note_box.add_child(crow)
@@ -680,15 +690,11 @@ func _update_rec_button() -> void:
 	elif note != null and note.has_media():
 		_rec_btn.text = "●  Record again"
 	else:
-		_rec_btn.text = "●  Record clip"
+		_rec_btn.text = "●  Record " + NoteManager.record_noun()
 
 
 func _apply_clip(target: NoteData, result: Dictionary) -> void:
-	if result.is_empty():
-		return
-	target.clip_file = result["clip_file"]
-	target.audio_file = result["audio_file"]
-	target.screenshot_file = result["screenshot_file"]
+	NoteManager.apply_recording(target, result)
 
 
 func _on_record_pressed() -> void:
@@ -700,7 +706,7 @@ func _on_record_pressed() -> void:
 		note.type = _type_row.selected
 		_rebuild_note()
 		if _rec_time != null:
-			_rec_time.text = "clip saved" if not result.is_empty() else "recording failed"
+			_rec_time.text = (NoteManager.record_noun() + " saved") if not result.is_empty() else "recording failed"
 			if NoteManager.last_clip_warning != "":
 				_rec_time.text += "  ·  " + NoteManager.last_clip_warning
 	else:
@@ -716,7 +722,7 @@ func _on_save_note_pressed() -> void:
 	note.author = NoteManager.author_name
 	note.role = NoteManager.author_role
 	if note.text == "" and not note.has_media():
-		_text.placeholder_text = "Write something or record a clip first."
+		_text.placeholder_text = "Write something or record a %s first." % NoteManager.record_noun()
 		return
 	var n := note
 	NoteManager.add_note(n)
@@ -756,7 +762,7 @@ func _on_reply_record_pressed() -> void:
 		var result := NoteManager.stop_clip()
 		_apply_clip(r, result)
 		_reply_rec.text = "● ✓" if not result.is_empty() else "●"
-		_rec_time.text = "clip attached. Press Send." if not result.is_empty() else "recording failed"
+		_rec_time.text = (NoteManager.record_noun() + " attached. Press Send.") if not result.is_empty() else "recording failed"
 	else:
 		NoteManager.start_clip(r.id)
 		_reply_rec.text = "■"

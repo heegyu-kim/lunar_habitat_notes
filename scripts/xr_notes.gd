@@ -109,6 +109,8 @@ func _setup() -> void:
 	add_child(placer)
 
 	NoteManager.teleport_requested.connect(_on_teleport)
+	# Holonotes record the head and the aim-pose hands (the hands point where the trigger ray points).
+	NoteManager.register_holo_sources(_camera, left, right)
 	print("XRNotes|INFO: sticky notes ready (wrist board on left hand, trigger on right hand)")
 
 
