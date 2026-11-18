@@ -1,35 +1,42 @@
 ## Writes the default session for the built-in habitat (the NASA reference tower): its rooms as zones,
-## its machinery as noise sources, and (on purpose) the two crew quarters next to the air-revitalisation
-## fans, so the app opens with a noise warning to review. Edit ZONES / SOURCES when the model changes.
+## its machinery as noise sources. The two berths on L3 stand next to the air-revitalisation racks, so
+## the app opens with a noise warning to review. Edit ZONES / SOURCES when the model changes.
 ##   Godot --headless --xr-mode off --path . res://tools/build_default_session.tscn --quit-after 900
 ## Output: user://sticky_notes/sessions/default_base_camp.json, copied to res://assets/sessions/.
 extends Node
 
 const OUT := "res://assets/sessions/default_base_camp.json"
 
+# Layout of the habitat exported from blender/Lunar_Surface_Habitat.blend (tools/export_habitat_glb.py).
+# World axes: x east, z south (Blender Y = -z). Decks at y = 0 / 2.6 / 5.2.
 # [name, floor y, type, x0, z0, x1, z1]
 const ZONES := [
-	# NASA reference tower only (the base-camp blockout is a layout reference, not in the scene)
-	["Suitport airlock (core)", 0.0, "airlock", -3.2, -3.2, 0.0, 3.2],
-	["Workbench & geology (core)", 0.0, "workshop", 0.0, -3.2, 3.2, 3.2],
-	["Hygiene & UWMS (core)", 2.6, "hygiene", -3.2, -3.2, 0.0, 0.0],
-	["Exercise (core)", 2.6, "exercise", 0.0, -3.2, 3.2, 0.0],
-	["Biology lab (core)", 2.6, "lab", 0.0, 0.0, 3.2, 3.2],
-	["Water processing (core)", 2.6, "eclss", -3.2, 0.0, 0.0, 3.2],
-	["Crew quarters core 1", 5.2, "crew_quarters", -3.2, -3.2, -0.3, -0.2],
-	["Crew quarters core 2", 5.2, "crew_quarters", -3.2, 0.2, -0.3, 3.2],
-	["Wardroom & galley (core)", 5.2, "galley", 0.3, -3.2, 3.2, 0.2],
-	["Medical (core)", 5.2, "medical", 0.3, 0.2, 3.2, 3.2],
+	# L1: airlock behind the partition (north), EVA preparation and workbench in front of it
+	["EVA airlock & suit", 0.0, "airlock", -2.2, -2.3, 2.2, -0.25],
+	["Workbench", 0.0, "workshop", -2.2, -0.25, -0.6, 2.2],
+	["EVA station & stowage", 0.0, "logistics", 0.6, -0.25, 2.2, 2.2],
+	# L2: exercise and biology either side of the air-revitalisation racks, hygiene booths south of them
+	["Exercise", 2.6, "exercise", -2.4, -2.4, -0.6, -0.2],
+	["Air revitalisation (L2)", 2.6, "eclss", -0.6, -2.4, 0.6, -0.3],
+	["Biology lab", 2.6, "lab", 0.6, -2.4, 2.4, -0.2],
+	["Shower", 2.6, "hygiene", -2.4, -0.2, -0.5, 1.4],
+	["Toilet (UWMS)", 2.6, "uwms", 0.5, -0.2, 2.4, 1.4],
+	# L3: two berths and the medical bay on the north side, right next to the upper air-revitalisation racks
+	["Medical", 5.2, "medical", -3.1, -3.1, -0.6, -0.15],
+	["Crew quarters 1", 5.2, "crew_quarters", -0.6, -3.1, 0.6, -1.1],
+	["Crew quarters 2", 5.2, "crew_quarters", 0.6, -3.1, 3.1, -0.5],
+	["Command station", 5.2, "lab", -3.1, -0.15, -0.55, 0.9],
+	["Wardroom", 5.2, "galley", -3.1, 0.9, -0.6, 3.1],
+	["Galley", 5.2, "galley", -0.6, 1.9, 1.2, 3.1],
+	["Physics & human research", 5.2, "lab", 1.2, -0.5, 3.1, 3.1],
 ]
 
 # [name, preset, x, y, z, db (0 = preset)]
 const SOURCES := [
-	# Three air-revitalisation pallets in the tower's core column, a wall away from the crew quarters.
-	["ARS fan 1 (core)", "fan", 0.0, 5.6, 0.0, 58],
-	["ARS fan 2 (core)", "fan", 0.2, 5.6, -0.25, 58],
-	["ARS fan 3 (core)", "fan", -0.2, 5.6, 0.25, 58],
-	["WPA pump 1 (core)", "pump", -1.2, 3.0, 1.2, 0],
-	["WPA pump 2 (core)", "pump", -1.8, 3.0, 0.6, 0],
+	# The air-revitalisation racks stand in one stack north of the ladder shaft, two per deck.
+	["ARS rack fans (L2)", "fan", 0.0, 3.5, -0.75, 58],
+	["ARS rack fans (L3)", "fan", 0.0, 6.1, -0.75, 58],
+	["Exercise bike", "exercise", -1.5, 3.2, -0.9, 0],
 ]
 
 
@@ -44,6 +51,9 @@ func _ready() -> void:
 	NoteManager.unload_model()
 	NoteManager.space["zones"] = []
 	NoteManager.space["noise_sources"] = []
+	# Detect the decks again from the model as it is now; landings come from the XRLadder node.
+	NoteManager.space["floors"] = []
+	NoteManager.rebuild_floors(false)
 	var floors: Array = NoteManager.floors_sorted()
 	print("BUILD| floors: " + str(floors.map(func(f: Dictionary) -> String: return "%s %.2f" % [f["name"], float(f["y"])])))
 	for z in ZONES:

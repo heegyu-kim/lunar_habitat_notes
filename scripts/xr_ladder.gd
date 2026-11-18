@@ -28,16 +28,16 @@ class_name XRLadder
 
 @export_group("Ladder")
 ## Ladder center on the floor plan (x, z), in world space
-@export var ladder_position := Vector2(0.0, 0.46)
+@export var ladder_position := Vector2(-0.44, 0.48)
 ## Where your head goes while on the ladder (x, z). Inside the deck openings.
-@export var climb_position := Vector2(0.0, 0.1)
+@export var climb_position := Vector2(0.05, 0.48)
 ## How close your head must be to the ladder to use it, in meters
 @export var use_radius := 1.0
 ## Where you arrive on each deck, bottom to top. y is the deck height.
 @export var landings: Array[Vector3] = [
-	Vector3(0.0, 0.0, 0.0),
-	Vector3(0.0, 2.6, 1.3),
-	Vector3(-0.7, 5.2, 0.45),
+	Vector3(0.45, 0.0, 0.48),
+	Vector3(0.0, 2.6, 1.6),
+	Vector3(0.0, 5.2, 1.55),
 ]
 
 @export_group("Parameters")

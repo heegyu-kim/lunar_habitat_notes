@@ -12,6 +12,7 @@ extends RefCounted
 
 const UP_NY := 0.8              # normal.y above this = faces up
 const BIN := 0.1                # histogram bin, metres
+const FINE := 0.01              # layer thickness when refining a floor height, metres
 const MIN_GAP := 2.0            # two floors are at least this far apart
 const MIN_FRACTION := 0.02      # a floor holds at least this share of all upward area
 const FLOOR_TOL := 0.15         # triangles within +-this of the floor height belong to it
@@ -103,18 +104,31 @@ static func find_floor_heights(up: Dictionary) -> PackedFloat32Array:
 			ok = false
 		if ok:
 			accepted.append(k)
-	# Refine each peak: area-weighted mean over the bin and its neighbours.
+	# Refine each peak to the surface you actually stand on. A deck is usually a stack (structure, plate,
+	# walking surface, mats) a few centimetres apart: of the 1 cm layers in the bin and its neighbours,
+	# take the highest one that is a real surface (at least a quarter of the largest layer's area).
 	var out := PackedFloat32Array()
 	for k in accepted:
-		var sum := 0.0
-		var w := 0.0
+		var layer_area: Dictionary = {}     # 1 cm layer index -> area
+		var layer_sum: Dictionary = {}      # 1 cm layer index -> area-weighted y
 		for t in areas.size():
 			var y := (faces[t * 3].y + faces[t * 3 + 1].y + faces[t * 3 + 2].y) / 3.0
 			var kk := int(floor(y / BIN))
 			if absi(kk - k) <= 1:
-				sum += y * areas[t]
-				w += areas[t]
-		out.append(sum / w if w > 0.0 else (k + 0.5) * BIN)
+				var li := int(floor(y / FINE))
+				layer_area[li] = layer_area.get(li, 0.0) + areas[t]
+				layer_sum[li] = layer_sum.get(li, 0.0) + y * areas[t]
+		var biggest := 0.0
+		for key: int in layer_area:
+			biggest = maxf(biggest, float(layer_area[key]))
+		var top: int = -1000000000
+		for key: int in layer_area:
+			if float(layer_area[key]) >= biggest * 0.25 and key > top:
+				top = key
+		if biggest > 0.0:
+			out.append(float(layer_sum[top]) / float(layer_area[top]))
+		else:
+			out.append((k + 0.5) * BIN)
 	out.sort()
 	return out
 

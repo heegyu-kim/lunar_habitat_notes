@@ -32,6 +32,8 @@ class_name XRMovement
 @export_range(0.0, 0.9) var deadzone := 0.2 ## for stick drift
 ## Right stick: ignore left/right below this so scrolling the board (up/down) does not turn you
 @export_range(0.0, 0.9) var turn_deadzone := 0.3
+## Walking follows the height of bodies in this group (the lunar terrain). Empty = stay level.
+@export var ground_group := "lunar_terrain"
 
 var _origin: XROrigin3D = null
 var _camera: XRCamera3D = null
@@ -83,6 +85,20 @@ func _slide(delta: float) -> void:
 	# youve probably seen in other games
 	var direction := (right.normalized() * stick.x + forward.normalized() * stick.y).limit_length(1.0)
 	_origin.global_position += direction * move_speed * delta
+	_follow_ground()
+
+
+## Outside, the lunar ground is not flat: keep the feet on it. Only bodies in `ground_group` count
+## and only when they are the first thing under the head, so decks and furniture are left alone.
+func _follow_ground() -> void:
+	if ground_group == "" or _camera == null:
+		return
+	var head := _camera.global_position
+	var feet_y := _origin.global_position.y
+	var query := PhysicsRayQueryParameters3D.create(Vector3(head.x, feet_y + 1.0, head.z), Vector3(head.x, feet_y - 3.0, head.z))
+	var hit := _origin.get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty() and (hit["collider"] as Node).is_in_group(ground_group):
+		_origin.global_position.y = (hit["position"] as Vector3).y
 
 
 ## Continuous rotation around the head. The further the stick is pushed, the faster the turn.

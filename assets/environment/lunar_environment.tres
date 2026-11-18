@@ -1,0 +1,31 @@
+[gd_resource type="Environment" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/environment/HDR_hazy_nebulae.hdr" id="1_aglx6"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_3fhjg"]
+panorama = ExtResource("1_aglx6")
+
+[sub_resource type="Sky" id="Sky_hxkhr"]
+sky_material = SubResource("PanoramaSkyMaterial_3fhjg")
+radiance_size = 4
+
+[resource]
+background_mode = 2
+sky = SubResource("Sky_hxkhr")
+tonemap_mode = 3
+tonemap_exposure = 1.2
+ssr_enabled = true
+ssao_enabled = true
+ssil_enabled = true
+sdfgi_enabled = true
+sdfgi_read_sky_light = false
+sdfgi_cascades = 8
+glow_enabled = true
+fog_light_energy = 0.01
+fog_sun_scatter = 0.01
+fog_density = 0.0713
+fog_aerial_perspective = 0.56
+fog_height = -706.89
+fog_height_density = -8.3613
+volumetric_fog_density = 0.01
+volumetric_fog_sky_affect = 0.058

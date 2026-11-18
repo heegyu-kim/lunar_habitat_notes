@@ -111,8 +111,30 @@ Also in the Session tab, for the built-in base camp and for any imported model:
 - **Sun azimuth** slider turns the low lunar sun around the base (the long shadows are the point).
 
 The default session (`assets/sessions/default_base_camp.json`, built by `tools/build_default_session.tscn`) zones the
-built-in tower and places its machinery. It opens with one warning on purpose: the NASA reference tower's two crew
-quarters sit a wall away from the air-revitalisation fans and read 40 dB against a 35 dB limit.
+built-in tower and places its machinery. It opens with a warning on purpose: the two berths on L3 stand next to the
+air-revitalisation racks and read 40 and 36 dB against a 35 dB limit.
+
+### Updating the built-in habitat from Blender
+
+The built-in habitat is modelled in `blender/Lunar_Surface_Habitat.blend` (the `blender/` folder is local, not in
+git). After saving in Blender, export it to the glb the game loads, reimport and check it:
+
+```
+"C:\Program Files\Blender Foundation\Blender 4.5\blender.exe" -b blender/Lunar_Surface_Habitat.blend --python tools/export_habitat_glb.py
+Godot --headless --xr-mode off --path . --import
+Godot --headless --xr-mode off --path . res://tests/habitat_smoke.tscn --quit-after 900
+```
+
+- Only what is **visible in the Blender viewport** is exported: hide a collection or an object to keep it out of the game.
+- Modifiers are applied, Subdivision Surface is exported at level 0, textures above 2048 px are halved, lights are
+  not exported. The .blend is never modified.
+- Every mesh gets collision at start-up (`SurfaceCollision` under `LunarHabitat`, `min_size = 0`), so notes stick to
+  everything and the desktop player cannot walk through furniture.
+- `tests/habitat_smoke.tscn` checks collision on every mesh, the three decks, free ladder landings and the minimap
+  landmarks. If you move the ladder, update `ladder_position`, `climb_position` and `landings` in
+  `scripts/xr_ladder.gd` and `scripts/desktop_player.gd` (and `ladder_position` in `scripts/xr_minimap.gd`). If you
+  move rooms, update the ZONES / SOURCES tables in `tools/build_default_session.gd` and run that scene, and the
+  LANDMARKS table in `scripts/xr_minimap.gd`.
 
 ### Putting your own habitat model in as the default
 
@@ -124,11 +146,32 @@ The built-in space is the NASA Artemis Surface Habitat reference tower (`Lunar_S
    child of `LunarHabitat`: it gives every mesh collision, so notes stick and the desktop player walks. Floors, masks and
    landings are detected from the geometry on the next run; zones and noise sources are drawn in the app or in
    `tools/build_default_session.gd` (edit its ZONES / SOURCES tables, run the scene, commit the json it writes).
-3. Lighting is yours: add lights under the model in the editor. `scenes/lunar_exterior.tscn` provides the black sky,
-   Earth, terrain, the 2-degree sun (Session tab slider) and a flat ambient (`ambient_energy` on the LunarExterior
-   node) that you can lower once rooms have their own lights. The renderer is Forward+, so LightmapGI, SSAO and SDFGI
-   are available. A zone's colour temperature is applied to any light that has a script calling
-   `apply_zone_tints()` (see `scripts/habitat_lights.gd` for a reference implementation).
+3. Lighting is yours: add lights under the model in the editor. There is no flat ambient: the sky is almost black,
+   so a room without lights is dark. The built-in habitat has 14 OmniLight3D nodes under
+   `LunarHabitat/InteriorLights` (energy 0.4, shadows on); move, tune or replace them in the editor. A zone's colour
+   temperature is applied to any light that has a script calling `apply_zone_tints()` (see
+   `scripts/habitat_lights.gd` for a reference implementation).
+
+### The lunar environment and the look
+
+The surroundings and the render settings come from the rendering-test project and are all editable in the editor:
+
+| What | Where |
+|---|---|
+| Sky, tonemap (ACES, exposure 1.2), SSR, SSAO, SSIL, SDFGI, glow | `assets/environment/lunar_environment.tres` on `WorldEnvironment` in `main.tscn` |
+| Sun (direction, energy, shadows), terrain, Earth | nodes of `scenes/lunar_exterior.tscn` |
+| Moon surface material (Moonscape diffuse / roughness / normal) | `assets/environment/moon_surface.tres` |
+| MSAA 4x, screen-space AA, SSAO / SSIL quality, SDFGI rays | Project Settings > Rendering (`project.godot`) |
+
+- The terrain is `assets/environment/moon_terrain.glb`: the 300 m terrain of the rendering test with the habitat site
+  moved to the origin and a 15 m pad levelled under it. `tools/build_moon_terrain.py` rebuilds it from the source
+  glb (change `SITE_X` / `SITE_Z` to stand somewhere else; it prints the matching Earth position).
+- The terrain has collision: the desktop player walks on it, VR stick locomotion follows its height
+  (`ground_group` on `XRMovement`), and "Go outside" puts you on the ground.
+- The Session tab's **Sun azimuth** slider turns the `Sun` node around the base at the height it has in the scene.
+- `lighter_in_vr` on the `LunarExterior` node switches SDFGI, SSIL and SSR off in the headset only, if the headset
+  cannot hold its frame rate.
+- The normal map is stored as JPEG (the 139 MB PNG is over GitHub's 100 MB file limit).
 
 Node names inside the model only affect how notes read ("on Hatch | glass"); nothing in the pipeline depends on them.
 

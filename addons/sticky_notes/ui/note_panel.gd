@@ -1204,6 +1204,10 @@ func _on_go_outside() -> void:
 	var centre := b.get_center()
 	var dist := maxf(b.size.x, b.size.z) * 0.5 + 10.0
 	var pos := Vector3(centre.x, 1.65, centre.z + dist)
+	# Stand on the lunar ground there, whatever its height.
+	var ext := get_tree().get_first_node_in_group("lunar_exterior")
+	if ext != null and ext.has_method("ground_y"):
+		pos.y = float(ext.ground_y(pos.x, pos.z, 0.0)) + 1.65
 	NoteManager.teleport_requested.emit(pos, Vector3(0.0, 0.0, 0.0))
 	_status.text = "Outside. Desktop: F toggles fly mode, Space / C go up and down."
 

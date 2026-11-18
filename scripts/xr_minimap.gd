@@ -12,7 +12,7 @@ extends Node
 ## Optional override: XR origin Y for each deck, for rigs that use custom landing heights.
 @export var deck_origin_heights := PackedFloat32Array()
 ## World X/Z of the central ladder, shown as a landmark only.
-@export var ladder_position := Vector2(0.0, 0.46)
+@export var ladder_position := Vector2(-0.44, 0.48)
 @export var cycle_action: StringName = &"primary_click"
 
 enum ViewMode { CLOSED, PLAN, HOLOGRAM }
@@ -27,13 +27,15 @@ const PLAYER := Color("#ffe47b")
 
 # Pairs are the imported model node and the concise map label.
 const LANDMARKS := [
-	[["Airlock | dust control mat", "Airlock"], ["Maintenance work bench", "Maintenance"], ["EVA workstation", "EVA station"],
-		["Geology utilization lab", "Geology lab"], ["OGA pallet 01", "Oxygen system"]],
-	[["Private hygiene compartment", "Hygiene"], ["Water processor pallet 02", "Water processing"],
-		["Biology utilization lab", "Biology lab"], ["Universal waste management system", "Waste system"],
-		["Potable and process water tanks", "Water tanks"]],
-	[["Crew quarters 1", "Crew quarters"], ["Medical station", "Medical"], ["Physics lab", "Physics lab"],
-		["Wardroom table", "Wardroom"], ["Human research lab", "Human research"]]
+	# Node names of the habitat model exported from blender/Lunar_Surface_Habitat.blend
+	# (tools/export_habitat_glb.py). tests/habitat_smoke.tscn fails when one of them is gone.
+	[["Airlock | floor zone", "Airlock"], ["Sketchfab_model_003", "Workbench"], ["EVA workstation", "EVA station"],
+		["Astronaut | Original mesh - assigned materials_001", "EVA suit"], ["Hatch door H-1_001", "EVA hatch"]],
+	[["ShowerBooth", "Shower"], ["ToiletBooth", "Toilet"], ["C-Component#1", "Exercise"],
+		["Biology utilization lab", "Biology lab"], ["Air revitalization pallet 01", "Air revitalization"]],
+	[["Sketchfab_model_002", "Crew quarters"], ["Sketchfab_model_001", "Medical"],
+		["COLAGTRECTL6 (C-COLAGTOV1)", "Wardroom"], ["Galley | food preparation", "Galley"],
+		["Human research lab", "Human research"]]
 ]
 const ZONE_COLOR := Color("#135a73")
 const ZONE_BORDER := Color("#abdcff")

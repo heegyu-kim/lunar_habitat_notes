@@ -189,7 +189,7 @@ func _run() -> void:
 	if bf.size() == 3:
 		_check(absf(float(bf[0]["y"])) < 0.2 and absf(float(bf[1]["y"]) - 2.6) < 0.2 and absf(float(bf[2]["y"]) - 5.2) < 0.2, "built-in floors at ~0 / 2.6 / 5.2 (%.2f / %.2f / %.2f)" % [float(bf[0]["y"]), float(bf[1]["y"]), float(bf[2]["y"])])
 		var bl: Array[Vector3] = NoteManager.floor_landings()
-		_check(bl[2].distance_to(Vector3(-0.7, float(bf[2]["y"]), 0.45)) < 0.05, "built-in landings come from XRLadder (%s)" % str(bl[2]))
+		_check(bl[2].distance_to(Vector3(0.0, float(bf[2]["y"]), 1.55)) < 0.05, "built-in landings come from XRLadder (%s)" % str(bl[2]))
 		for fl in bf:
 			var img: Image = SF.mask_to_image(NoteManager.floor_masks[str(fl["id"])])
 			img.save_png("C:/Users/user/AppData/Local/Temp/claude/ec29f026d20d029c/5d53cc21-8bd9-4917-b371-2d2c1a0be905/scratchpad/mask_%s.png" % str(fl["name"]))

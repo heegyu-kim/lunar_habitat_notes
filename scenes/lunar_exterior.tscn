@@ -1,6 +1,33 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/lunar_exterior.gd" id="1_lunar"]
+[ext_resource type="PackedScene" path="res://assets/environment/moon_terrain.glb" id="2_terrain"]
+[ext_resource type="Material" path="res://assets/environment/moon_surface.tres" id="3_moon"]
+[ext_resource type="Texture2D" path="res://assets/environment/2k_earth_daymap.jpg" id="4_earth"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_earth"]
+albedo_texture = ExtResource("4_earth")
+
+[sub_resource type="SphereMesh" id="SphereMesh_earth"]
+material = SubResource("StandardMaterial3D_earth")
+radius = 3.0
+height = 6.0
 
 [node name="LunarExterior" type="Node3D"]
 script = ExtResource("1_lunar")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.4799127, -0.7830937, 0.3955352, -0.8193674, 0.56121296, 0.11694919, -0.31356162, -0.2679632, -0.9109747, 0, 20, 0)
+shadow_enabled = true
+directional_shadow_blend_splits = true
+
+[node name="MoonTerrain" parent="." instance=ExtResource("2_terrain")]
+
+[node name="MoonTerrain" parent="MoonTerrain" index="0"]
+surface_material_override/0 = ExtResource("3_moon")
+
+[node name="Earth" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -141.7, 26.4, 30)
+mesh = SubResource("SphereMesh_earth")
+
+[editable path="MoonTerrain"]

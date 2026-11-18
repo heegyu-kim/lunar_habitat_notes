@@ -502,7 +502,12 @@ func _build_session() -> void:
 	var go_out := _big("Go outside", func() -> void:
 		var b: AABB = NoteManager.model_bounds() if NoteManager.has_model() else AABB(Vector3(-3.3, 0, -3.3), Vector3(6.6, 8.5, 6.6))
 		var c := b.get_center()
-		NoteManager.teleport_requested.emit(Vector3(c.x, 1.65, c.z + maxf(b.size.x, b.size.z) * 0.5 + 10.0), Vector3.ZERO)
+		var out_pos := Vector3(c.x, 1.65, c.z + maxf(b.size.x, b.size.z) * 0.5 + 10.0)
+		# Stand on the lunar ground there, whatever its height.
+		var ext := get_tree().get_first_node_in_group("lunar_exterior")
+		if ext != null and ext.has_method("ground_y"):
+			out_pos.y = float(ext.ground_y(out_pos.x, out_pos.z, 0.0)) + 1.65
+		NoteManager.teleport_requested.emit(out_pos, Vector3.ZERO)
 		close())
 	go_out.size_flags_horizontal = SIZE_EXPAND_FILL
 	out_row.add_child(go_out)
