@@ -119,6 +119,7 @@ func load_note(note: NoteData) -> bool:
 
 func _toggle() -> void:
 	if _holo != null:
+		print("Holo|INFO: play button pressed (note %s, immersive=%s, playing=%s)" % [_note.id, immersive, NoteManager.is_holo_playing(_note.id)])
 		if NoteManager.is_holo_playing(_note.id):
 			NoteManager.stop_holo_playback()
 		elif immersive:

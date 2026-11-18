@@ -120,7 +120,9 @@ func enter(note: NoteData) -> void:
 ## Holonote: fade, stand behind the author's starting point, watch their ghost, fade back.
 func _enter_holo(note: NoteData) -> void:
 	var spot := NoteManager.holo_viewer_spot(note)
+	print("Holo|INFO: theater enter %s, holo_file=%s, spot=%s" % [note.id, note.holo_file, str(spot)])
 	if spot.is_empty():
+		push_warning("Holo|WARN: holonote file missing or unreadable: " + note.holo_file)
 		return
 	active = true
 	_holo = true
@@ -161,6 +163,7 @@ func _process(delta: float) -> void:
 		return
 	if _holo:
 		if not NoteManager.is_holo_playing():
+			print("Holo|INFO: ghost finished, leaving theater")
 			exit()
 		return
 	_t = _audio.get_playback_position() if _has_audio and _audio.playing else _t + delta

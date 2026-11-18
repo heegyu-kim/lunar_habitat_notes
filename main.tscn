@@ -7,7 +7,6 @@
 [ext_resource type="Script" uid="uid://jfdo7emflrdm" path="res://scripts/B_toggle_passthrough.gd" id="3_vivmo"]
 [ext_resource type="Texture2D" uid="uid://c038dxexu2lhv" path="res://assets/models/controllers/quest_touch_plus_right_crystalControllers_right_BaseColor.png" id="4_5vw27"]
 [ext_resource type="Script" uid="uid://bkeashwobe3gi" path="res://scripts/xr_passthrough.gd" id="6_pass"]
-[ext_resource type="Shader" uid="uid://bdncegx70k5ge" path="res://assets/shaders/floor_grid.gdshader" id="7_grid"]
 [ext_resource type="Script" uid="uid://ccv7ecbg7b644" path="res://scripts/xr_ladder.gd" id="10_2cqfq"]
 [ext_resource type="Script" uid="uid://u4v467pv0cty" path="res://scripts/xr_grab.gd" id="11_grab"]
 [ext_resource type="Script" uid="uid://cabtbicn2evsq" path="res://scripts/xr_move.gd" id="12_move"]
@@ -18,12 +17,13 @@
 [ext_resource type="PackedScene" uid="uid://b7yw267kkd83u" path="res://assets/models/Lunar Habitat/Lunar_Surface_Habitat.glb" id="15_vivmo"]
 [ext_resource type="Script" uid="uid://mn0ebf0iwpyo" path="res://scripts/xr_notes.gd" id="20_notes"]
 [ext_resource type="Script" uid="uid://b5nn35ofa5wxd" path="res://scripts/habitat_collision.gd" id="21_surf"]
+[ext_resource type="LightmapGIData" uid="uid://dqrc0nvqbrs7p" path="res://main.lmbake" id="22_1u8w0"]
 [ext_resource type="PackedScene" path="res://scenes/lunar_exterior.tscn" id="22_lunar"]
 [ext_resource type="Script" uid="uid://ba6pi30e7ipj5" path="res://scripts/xr_minimap.gd" id="23_minimap"]
 [ext_resource type="Script" uid="uid://c1iup7584gdm2" path="res://scripts/note_placement_audio.gd" id="24_note_sfx"]
 [ext_resource type="PackedScene" path="res://scenes/habitat_ambience.tscn" id="26_ambience"]
-[ext_resource type="Script" path="res://scripts/opening_sound.gd" id="27_opening"]
-[ext_resource type="Environment" path="res://assets/environment/lunar_environment.tres" id="28_lunar_env"]
+[ext_resource type="Script" uid="uid://cxjuq61tdi7ww" path="res://scripts/opening_sound.gd" id="27_opening"]
+[ext_resource type="Environment" uid="uid://xfxakeihyv2a" path="res://assets/environment/lunar_environment.tres" id="28_lunar_env"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_grab"]
 radius = 0.08
@@ -480,30 +480,6 @@ _bundled = {
 "version": 3
 }
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_cjouy"]
-
-[sub_resource type="Sky" id="Sky_oqsj0"]
-sky_material = SubResource("ProceduralSkyMaterial_cjouy")
-
-[sub_resource type="Environment" id="Environment_lts4m"]
-background_mode = 2
-sky = SubResource("Sky_oqsj0")
-ambient_light_source = 3
-reflected_light_source = 2
-ssr_enabled = true
-fog_enabled = true
-volumetric_fog_enabled = true
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_floor"]
-render_priority = 0
-shader = ExtResource("7_grid")
-shader_parameter/floor_color = Color(0.1, 0.11, 0.13, 1)
-shader_parameter/line_color = Color(0.3, 0.48, 0.68, 1)
-shader_parameter/grid_size = 1.0
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
-size = Vector2(10.2, 10.2)
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
 size = Vector3(14, 0.2, 14)
 
@@ -588,7 +564,7 @@ data = PackedVector3Array(-2.6376, -0.009, 1.5807999, -2.7798, -0.009, 1.3147, -
 [node name="Main" type="Node3D" unique_id=500145794]
 script = ExtResource("1_ig7tw")
 
-[node name="OpeningSound" type="AudioStreamPlayer" parent="."]
+[node name="OpeningSound" type="AudioStreamPlayer" parent="." unique_id=1267768948]
 volume_db = -4.0
 script = ExtResource("27_opening")
 
@@ -690,11 +666,6 @@ ladder = NodePath("../XRLadder")
 environment = ExtResource("28_lunar_env")
 
 [node name="Floor" type="StaticBody3D" parent="." unique_id=1222995564]
-
-[node name="Mesh" type="MeshInstance3D" parent="Floor" unique_id=1788946882]
-visible = false
-material_override = SubResource("ShaderMaterial_floor")
-mesh = SubResource("PlaneMesh_floor")
 
 [node name="Collision" type="CollisionShape3D" parent="Floor" unique_id=429380688]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
@@ -825,105 +796,146 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.854, 0)
 [node name="Collision" type="CollisionShape3D" parent="LunarHabitat/FloorL3" unique_id=1446973457]
 shape = SubResource("ConcavePolygonShape3D_074og")
 
-[node name="InteriorLights" type="Node3D" parent="LunarHabitat"]
+[node name="InteriorLights" type="Node3D" parent="LunarHabitat" unique_id=522479469]
 
-[node name="L1_AirlockW" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L1_AirlockW" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=148945430]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, 2.813, -1.35)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L1_AirlockE" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L1_AirlockE" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=907285286]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 2.813, -1.35)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L1_WorkbenchSide" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L1_WorkbenchSide" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=1569925012]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 2.813, 1.35)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L1_EvaStationSide" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L1_EvaStationSide" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=1473425663]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 2.813, 1.35)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L2_Exercise" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L2_Exercise" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=599345605]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 5.413, -1.3)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L2_Biology" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L2_Biology" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=560917181]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 5.413, -1.3)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L2_South" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 5.413, 1.75)
+[node name="L2_South" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=1132561637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.413, 1.75)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L2_Shower" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L2_Shower" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=1202109286]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.15, 5.413, 0.55)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L2_Toilet" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L2_Toilet" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=489134505]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 5.413, 0.55)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L3_Medical" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L3_Medical" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=882856896]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 7.963, -1.6)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L3_CrewQuarters" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L3_CrewQuarters" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=1174108318]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 7.963, -1.6)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L3_Wardroom" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L3_Wardroom" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=596774680]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 7.963, 1.7)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L3_Labs" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L3_Labs" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=587586584]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9, 7.963, 0.9)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
 
-[node name="L3_Galley" type="OmniLight3D" parent="LunarHabitat/InteriorLights"]
+[node name="L3_Galley" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=1128547241]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 7.963, 1.9)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
+light_bake_mode = 1
 shadow_enabled = true
 omni_range = 4.0
+
+[node name="BakedLighting" type="LightmapGI" parent="LunarHabitat" unique_id=2057211122 groups=["baked_lighting"]]
+quality = 2
+interior = true
+max_texture_size = 8192
+light_data = ExtResource("22_1u8w0")
+
+[node name="ReflectionsL1" type="ReflectionProbe" parent="LunarHabitat" unique_id=138205215 groups=["baked_lighting"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.913, 0)
+size = Vector3(6.6, 2.5, 6.6)
+box_projection = true
+interior = true
+ambient_mode = 0
+
+[node name="ReflectionsL2" type="ReflectionProbe" parent="LunarHabitat" unique_id=1085812014 groups=["baked_lighting"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.513, 0)
+size = Vector3(6.8, 2.5, 6.8)
+box_projection = true
+interior = true
+ambient_mode = 0
+
+[node name="ReflectionsL3" type="ReflectionProbe" parent="LunarHabitat" unique_id=1525280208 groups=["baked_lighting"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.113, 0)
+size = Vector3(7, 2.5, 7)
+box_projection = true
+interior = true
+ambient_mode = 0
 
 [node name="SurfaceCollision" type="Node" parent="LunarHabitat" unique_id=121640256]
 script = ExtResource("21_surf")

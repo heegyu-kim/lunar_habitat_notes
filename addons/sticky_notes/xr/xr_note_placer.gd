@@ -350,6 +350,7 @@ func _place(hit: Dictionary) -> void:
 
 
 func _on_play_requested(note: NoteData) -> void:
+	print("Holo|INFO: play requested (theater=%s, recording=%s, active=%s)" % [theater != null, NoteManager.is_clip_recording, theater != null and theater.active])
 	if theater == null or NoteManager.is_clip_recording:
 		return
 	stop_tour()

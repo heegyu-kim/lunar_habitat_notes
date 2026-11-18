@@ -10,6 +10,10 @@ extends Node3D
 
 const VIEW_W := 560
 const VIEW_H := 760
+## The board is laid out at VIEW_W x VIEW_H but rendered at this multiple, so text is rasterised
+## sharply instead of being stretched across the headset's pixels (at 1x every texel covered ~2.4
+## display pixels and text looked fuzzy). Pointer coordinates stay in layout space.
+const RENDER_SCALE := 2
 const BOARD_W := 0.36   # m
 const BOARD_H := BOARD_W * VIEW_H / VIEW_W
 
@@ -29,7 +33,9 @@ var _pointer_down: bool = false
 func _init() -> void:
 	# ---- 2D 쪽 ----
 	viewport = SubViewport.new()
-	viewport.size = Vector2i(VIEW_W, VIEW_H)
+	viewport.size = Vector2i(VIEW_W, VIEW_H) * RENDER_SCALE
+	viewport.size_2d_override = Vector2i(VIEW_W, VIEW_H)
+	viewport.size_2d_override_stretch = true
 	viewport.transparent_bg = true
 	viewport.gui_embed_subwindows = true       # OptionButton 팝업, 확인창이 보드 안에 뜨게
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -98,6 +104,7 @@ func _init() -> void:
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.albedo_texture = viewport.get_texture()
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
 	# 반투명 외피(inflatable shell) 메시보다 나중에 그린다. 깊이 테스트는 그대로라 벽 뒤에선 가려진다.
 	mat.render_priority = 20
 	_quad.material_override = mat
@@ -167,7 +174,7 @@ func pointer_move(px: Vector2) -> void:
 	ev.relative = px - _last_px if _last_px.x >= 0.0 else Vector2.ZERO
 	ev.button_mask = MOUSE_BUTTON_MASK_LEFT if _pointer_down else 0
 	_last_px = px
-	viewport.push_input(ev)
+	viewport.push_input(ev, true)     # layout-space coordinates
 
 
 func pointer_button(px: Vector2, pressed: bool) -> void:
@@ -179,7 +186,7 @@ func pointer_button(px: Vector2, pressed: bool) -> void:
 	ev.global_position = px
 	ev.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
 	_last_px = px
-	viewport.push_input(ev)
+	viewport.push_input(ev, true)     # layout-space coordinates
 
 
 func pointer_leave() -> void:

@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b6v76effcmqak"
-path="res://.godot/imported/Lunar_Surface_Habitat_Image_3.png-6e07a6ae2e63e85989acb59bfe948214.ctex"
+path.s3tc="res://.godot/imported/Lunar_Surface_Habitat_Image_3.png-6e07a6ae2e63e85989acb59bfe948214.s3tc.ctex"
+path.etc2="res://.godot/imported/Lunar_Surface_Habitat_Image_3.png-6e07a6ae2e63e85989acb59bfe948214.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "8e697611e428cc237b4dc007522837a6"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/Lunar Habitat/Lunar_Surface_Habitat_Image_3.png"
-dest_files=["res://.godot/imported/Lunar_Surface_Habitat_Image_3.png-6e07a6ae2e63e85989acb59bfe948214.ctex"]
+dest_files=["res://.godot/imported/Lunar_Surface_Habitat_Image_3.png-6e07a6ae2e63e85989acb59bfe948214.s3tc.ctex", "res://.godot/imported/Lunar_Surface_Habitat_Image_3.png-6e07a6ae2e63e85989acb59bfe948214.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +42,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

@@ -51,6 +51,7 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(MODELS_DIR)
 	_load_identity()
 	_ensure_input_actions()
+	_sharpen_default_font()
 	_setup_recorder()
 	_setup_microphone()
 	_setup_ffmpeg()
@@ -1023,6 +1024,7 @@ func _stop_holo() -> Dictionary:
 		return {}
 	f.store_string(JSON.stringify(motion.to_dict()))
 	f.close()
+	print("Holo|INFO: recorded %s: %d frames, %.1fs, voice=%s, left=%s right=%s" % [_holo_id, motion.frame_count, motion.duration, audio_rel != "", motion.has_track("left"), motion.has_track("right")])
 	_holo_cache.erase("holo_%s/holo.json" % _holo_id)
 	var shot := "shot_holo_%s.png" % _holo_id
 	return {
@@ -1072,6 +1074,7 @@ func _ensure_holo_player() -> HoloPlayer:
 ## spot behind the author first; the VR theater does its own fade + teleport and passes false.
 func play_holo(note: NoteData, move_viewer: bool = true) -> bool:
 	if note == null or not note.has_holo() or is_clip_recording:
+		print("Holo|WARN: play_holo refused (has_holo=%s, recording=%s)" % [note != null and note.has_holo(), is_clip_recording])
 		return false
 	var m := load_holo(note.holo_file)
 	if m == null:
@@ -1080,7 +1083,9 @@ func play_holo(note: NoteData, move_viewer: bool = true) -> bool:
 	if move_viewer:
 		var spot := p.viewer_spot(m)
 		teleport_requested.emit(spot[0], spot[1])
-	return p.play(note, m)
+	var ok := p.play(note, m)
+	print("Holo|INFO: play_holo %s -> %s (%d frames, %.1fs, audio=%s, head at %s)" % [note.id, ok, m.frame_count, m.duration, m.audio_file, str(m.pose_at("head", 0.0).origin)])
+	return ok
 
 
 func stop_holo_playback() -> void:
@@ -1100,6 +1105,17 @@ func holo_viewer_spot(note: NoteData) -> Array:
 	if m == null:
 		return []
 	return _ensure_holo_player().viewer_spot(m)
+
+
+## VR text: the default font is rasterised per size with no mipmaps, so 3D labels (note cards, tips,
+## the ghost's name) shimmer and blur with distance. MSDF stores glyph shapes instead of pixels and
+## stays sharp at any size and distance; mipmaps stop the shimmer when it is small.
+func _sharpen_default_font() -> void:
+	var f := ThemeDB.fallback_font as FontFile
+	if f == null:
+		return
+	f.multichannel_signed_distance_field = true
+	f.generate_mipmaps = true
 
 
 ## 종료할 때 녹화 중이면 취소하고 스레드를 정리한다.
@@ -1175,6 +1191,11 @@ func _setup_microphone() -> void:
 		AudioServer.add_bus(bus_idx)
 		AudioServer.set_bus_name(bus_idx, RECORD_BUS)
 		AudioServer.add_bus_effect(bus_idx, AudioEffectRecord.new())
+	# A bus can only send to a bus earlier in the list; a send to a later one falls back to Master,
+	# which played the mic out of the speakers (you heard yourself). Keep MicSink right after Master.
+	if AudioServer.get_bus_index("MicSink") > 1:
+		AudioServer.move_bus(AudioServer.get_bus_index("MicSink"), 1)
+	bus_idx = AudioServer.get_bus_index(RECORD_BUS)
 	AudioServer.set_bus_mute(bus_idx, false)
 	AudioServer.set_bus_send(bus_idx, "MicSink")
 	for i in AudioServer.get_bus_effect_count(bus_idx):
