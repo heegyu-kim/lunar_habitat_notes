@@ -1,40 +1,40 @@
 {
   "floors": [
     {
-      "id": "f72903_1",
+      "id": "f58955_7",
       "landings": [
         [
-          0.0,
-          -0.0157583560794592,
-          0.0
+          0.449999988079071,
+          -0.00000000372529029846191,
+          0.479999989271164
         ]
       ],
       "name": "L1",
-      "y": -0.0497621595859528
+      "y": -0.00000000372529029846191
     },
     {
-      "id": "f72903_2",
+      "id": "f58955_8",
       "landings": [
         [
           0.0,
-          2.584881067276,
-          1.29999995231628
+          2.60000729560852,
+          1.60000002384186
         ]
       ],
       "name": "L2",
-      "y": 2.58399510383606
+      "y": 2.60000729560852
     },
     {
-      "id": "f72903_3",
+      "id": "f58955_9",
       "landings": [
         [
-          -0.699999988079071,
-          5.19650363922119,
-          0.449999988079071
+          0.0,
+          5.19999980926514,
+          1.54999995231628
         ]
       ],
       "name": "L3",
-      "y": 5.19610404968262
+      "y": 5.19999980926514
     }
   ],
   "format": "sticky_notes",
@@ -43,114 +43,190 @@
     {
       "db_at_1m": 58.0,
       "duty": "always",
-      "id": "n76023_1",
-      "name": "ARS fan 1 (core)",
+      "id": "n58955_1",
+      "name": "ARS rack fans (L2)",
       "position": [
         0.0,
-        5.59999990463257,
-        0.0
+        3.5,
+        -0.75
       ],
       "preset": "fan"
     },
     {
       "db_at_1m": 58.0,
       "duty": "always",
-      "id": "n76023_2",
-      "name": "ARS fan 2 (core)",
+      "id": "n58955_2",
+      "name": "ARS rack fans (L3)",
       "position": [
-        0.200000002980232,
-        5.59999990463257,
-        -0.25
+        0.0,
+        6.09999990463257,
+        -0.75
       ],
       "preset": "fan"
     },
     {
-      "db_at_1m": 58.0,
+      "db_at_1m": 70.0,
       "duty": "always",
-      "id": "n76023_3",
-      "name": "ARS fan 3 (core)",
+      "id": "n58955_3",
+      "name": "Exercise bike",
       "position": [
-        -0.200000002980232,
-        5.59999990463257,
-        0.25
+        -1.5,
+        3.20000004768372,
+        -0.899999976158142
       ],
-      "preset": "fan"
-    },
-    {
-      "db_at_1m": 65.0,
-      "duty": "always",
-      "id": "n76023_4",
-      "name": "WPA pump 1 (core)",
-      "position": [
-        -1.20000004768372,
-        3.0,
-        1.20000004768372
-      ],
-      "preset": "pump"
-    },
-    {
-      "db_at_1m": 65.0,
-      "duty": "always",
-      "id": "n76023_5",
-      "name": "WPA pump 2 (core)",
-      "position": [
-        -1.79999995231628,
-        3.0,
-        0.600000023841858
-      ],
-      "preset": "pump"
+      "preset": "exercise"
     }
   ],
   "notes": [],
-  "saved_at": "2026-11-06 09:40:23",
+  "saved_at": "2026-11-17 18:42:35",
   "version": 2,
   "zones": [
     {
       "clean": 0.1,
       "color_temp_k": 5000,
-      "floor": "f72903_1",
-      "id": "z76023_1",
-      "name": "Suitport airlock (core)",
-      "noise_db": 11.0,
+      "floor": "f58955_7",
+      "id": "z58955_1",
+      "name": "EVA airlock & suit",
+      "noise_db": 9.0,
       "noise_limit_db": 80,
       "noise_over": false,
       "note": "",
       "private": 0.1,
       "quiet": 0.1,
       "rect": [
-        -3.20000004768372,
-        -3.20000004768372,
-        0.0,
-        3.20000004768372
+        -2.20000004768372,
+        -2.29999995231628,
+        2.20000004768372,
+        -0.25
       ],
       "type": "airlock"
     },
     {
       "clean": 0.2,
       "color_temp_k": 4500,
-      "floor": "f72903_1",
-      "id": "z76023_2",
-      "name": "Workbench & geology (core)",
-      "noise_db": 10.0,
+      "floor": "f58955_7",
+      "id": "z58955_2",
+      "name": "Workbench",
+      "noise_db": 8.0,
       "noise_limit_db": 85,
       "noise_over": false,
       "note": "",
       "private": 0.1,
       "quiet": 0.2,
       "rect": [
-        0.0,
-        -3.20000004768372,
-        3.20000004768372,
-        3.20000004768372
+        -2.20000004768372,
+        -0.25,
+        -0.600000023841858,
+        2.20000004768372
       ],
       "type": "workshop"
     },
     {
+      "clean": 0.5,
+      "color_temp_k": 4000,
+      "floor": "f58955_7",
+      "id": "z58955_3",
+      "name": "EVA station & stowage",
+      "noise_db": 6.0,
+      "noise_limit_db": 55,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        0.600000023841858,
+        -0.25,
+        2.20000004768372,
+        2.20000004768372
+      ],
+      "type": "logistics"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 4500,
+      "floor": "f58955_8",
+      "id": "z58955_4",
+      "name": "Exercise",
+      "noise_db": 70.0,
+      "noise_limit_db": 75,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.1,
+      "rect": [
+        -2.40000009536743,
+        -2.40000009536743,
+        -0.600000143051147,
+        -0.200000047683716
+      ],
+      "type": "exercise"
+    },
+    {
+      "clean": 0.5,
+      "color_temp_k": 5000,
+      "floor": "f58955_8",
+      "id": "z58955_5",
+      "name": "Air revitalisation (L2)",
+      "noise_db": 58.0,
+      "noise_limit_db": 80,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.1,
+      "rect": [
+        -0.600000023841858,
+        -2.40000009536743,
+        0.600000023841858,
+        -0.300000190734863
+      ],
+      "type": "eclss"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 4500,
+      "floor": "f58955_8",
+      "id": "z58955_6",
+      "name": "Biology lab",
+      "noise_db": 31.0,
+      "noise_limit_db": 60,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.5,
+      "rect": [
+        0.600000023841858,
+        -2.40000009536743,
+        2.40000009536743,
+        -0.200000047683716
+      ],
+      "type": "lab"
+    },
+    {
       "clean": 0.9,
       "color_temp_k": 3500,
-      "floor": "f72903_2",
-      "id": "z76023_3",
-      "name": "Hygiene & UWMS (core)",
+      "floor": "f58955_8",
+      "id": "z58955_7",
+      "name": "Shower",
+      "noise_db": 36.0,
+      "noise_limit_db": 45,
+      "noise_over": false,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.6,
+      "rect": [
+        -2.40000009536743,
+        -0.200000002980232,
+        -0.50000011920929,
+        1.39999997615814
+      ],
+      "type": "hygiene"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3500,
+      "floor": "f58955_8",
+      "id": "z58955_8",
+      "name": "Toilet (UWMS)",
       "noise_db": 30.0,
       "noise_limit_db": 45,
       "noise_over": false,
@@ -158,152 +234,152 @@
       "private": 0.9,
       "quiet": 0.6,
       "rect": [
-        -3.20000004768372,
-        -3.20000004768372,
-        0.0,
-        0.0
+        0.5,
+        -0.200000002980232,
+        2.40000009536743,
+        1.39999997615814
       ],
-      "type": "hygiene"
-    },
-    {
-      "clean": 0.8,
-      "color_temp_k": 4500,
-      "floor": "f72903_2",
-      "id": "z76023_4",
-      "name": "Exercise (core)",
-      "noise_db": 26.0,
-      "noise_limit_db": 75,
-      "noise_over": false,
-      "note": "",
-      "private": 0.2,
-      "quiet": 0.1,
-      "rect": [
-        0.0,
-        -3.20000004768372,
-        3.20000004768372,
-        0.0
-      ],
-      "type": "exercise"
-    },
-    {
-      "clean": 0.8,
-      "color_temp_k": 4500,
-      "floor": "f72903_2",
-      "id": "z76023_5",
-      "name": "Biology lab (core)",
-      "noise_db": 28.0,
-      "noise_limit_db": 60,
-      "noise_over": false,
-      "note": "",
-      "private": 0.2,
-      "quiet": 0.5,
-      "rect": [
-        0.0,
-        0.0,
-        3.20000004768372,
-        3.20000004768372
-      ],
-      "type": "lab"
-    },
-    {
-      "clean": 0.5,
-      "color_temp_k": 5000,
-      "floor": "f72903_2",
-      "id": "z76023_6",
-      "name": "Water processing (core)",
-      "noise_db": 67.0,
-      "noise_limit_db": 80,
-      "noise_over": false,
-      "note": "",
-      "private": 0.1,
-      "quiet": 0.1,
-      "rect": [
-        -3.20000004768372,
-        0.0,
-        0.0,
-        3.20000004768372
-      ],
-      "type": "eclss"
-    },
-    {
-      "clean": 0.9,
-      "color_temp_k": 3000,
-      "floor": "f72903_3",
-      "id": "z76023_7",
-      "name": "Crew quarters core 1",
-      "noise_db": 40.0,
-      "noise_limit_db": 35,
-      "noise_over": true,
-      "note": "",
-      "private": 0.9,
-      "quiet": 0.9,
-      "rect": [
-        -3.20000004768372,
-        -3.20000004768372,
-        -0.299999952316284,
-        -0.200000047683716
-      ],
-      "type": "crew_quarters"
-    },
-    {
-      "clean": 0.9,
-      "color_temp_k": 3000,
-      "floor": "f72903_3",
-      "id": "z76023_8",
-      "name": "Crew quarters core 2",
-      "noise_db": 40.0,
-      "noise_limit_db": 35,
-      "noise_over": true,
-      "note": "",
-      "private": 0.9,
-      "quiet": 0.9,
-      "rect": [
-        -3.20000004768372,
-        0.200000002980232,
-        -0.299999952316284,
-        3.20000004768372
-      ],
-      "type": "crew_quarters"
-    },
-    {
-      "clean": 0.9,
-      "color_temp_k": 3000,
-      "floor": "f72903_3",
-      "id": "z76023_9",
-      "name": "Wardroom & galley (core)",
-      "noise_db": 40.0,
-      "noise_limit_db": 65,
-      "noise_over": false,
-      "note": "",
-      "private": 0.1,
-      "quiet": 0.5,
-      "rect": [
-        0.300000011920929,
-        -3.20000004768372,
-        3.20000004768372,
-        0.200000047683716
-      ],
-      "type": "galley"
+      "type": "uwms"
     },
     {
       "clean": 0.9,
       "color_temp_k": 4500,
-      "floor": "f72903_3",
-      "id": "z76023_10",
-      "name": "Medical (core)",
-      "noise_db": 40.0,
+      "floor": "f58955_9",
+      "id": "z58955_9",
+      "name": "Medical",
+      "noise_db": 37.0,
       "noise_limit_db": 45,
       "noise_over": false,
       "note": "",
       "private": 0.6,
       "quiet": 0.8,
       "rect": [
-        0.300000011920929,
-        0.200000002980232,
-        3.20000004768372,
-        3.20000004768372
+        -3.09999990463257,
+        -3.09999990463257,
+        -0.599999904632568,
+        -0.149999856948853
       ],
       "type": "medical"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f58955_9",
+      "id": "z58955_10",
+      "name": "Crew quarters 1",
+      "noise_db": 40.0,
+      "noise_limit_db": 35,
+      "noise_over": true,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        -0.600000023841858,
+        -3.09999990463257,
+        0.600000023841858,
+        -1.09999990463257
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f58955_9",
+      "id": "z58955_11",
+      "name": "Crew quarters 2",
+      "noise_db": 36.0,
+      "noise_limit_db": 35,
+      "noise_over": true,
+      "note": "",
+      "private": 0.9,
+      "quiet": 0.9,
+      "rect": [
+        0.600000023841858,
+        -3.09999990463257,
+        3.09999990463257,
+        -0.5
+      ],
+      "type": "crew_quarters"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 4500,
+      "floor": "f58955_9",
+      "id": "z58955_12",
+      "name": "Command station",
+      "noise_db": 36.0,
+      "noise_limit_db": 60,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.5,
+      "rect": [
+        -3.09999990463257,
+        -0.150000005960464,
+        -0.549999952316284,
+        0.899999976158142
+      ],
+      "type": "lab"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f58955_9",
+      "id": "z58955_13",
+      "name": "Wardroom",
+      "noise_db": 33.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -3.09999990463257,
+        0.899999976158142,
+        -0.599999904632568,
+        3.09999990463257
+      ],
+      "type": "galley"
+    },
+    {
+      "clean": 0.9,
+      "color_temp_k": 3000,
+      "floor": "f58955_9",
+      "id": "z58955_14",
+      "name": "Galley",
+      "noise_db": 33.0,
+      "noise_limit_db": 65,
+      "noise_over": false,
+      "note": "",
+      "private": 0.1,
+      "quiet": 0.5,
+      "rect": [
+        -0.600000023841858,
+        1.89999997615814,
+        1.19999992847443,
+        3.09999990463257
+      ],
+      "type": "galley"
+    },
+    {
+      "clean": 0.8,
+      "color_temp_k": 4500,
+      "floor": "f58955_9",
+      "id": "z58955_15",
+      "name": "Physics & human research",
+      "noise_db": 34.0,
+      "noise_limit_db": 60,
+      "noise_over": false,
+      "note": "",
+      "private": 0.2,
+      "quiet": 0.5,
+      "rect": [
+        1.20000004768372,
+        -0.5,
+        3.09999990463257,
+        3.09999990463257
+      ],
+      "type": "lab"
     }
   ]
 }

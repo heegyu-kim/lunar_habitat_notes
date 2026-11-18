@@ -21,16 +21,16 @@ extends CharacterBody3D
 ## Kill switch
 @export var ladder_enabled := true
 ## Ladder center on the floor plan (x, z), world space. Keep in sync with XRLadder in main.tscn.
-@export var ladder_position := Vector2(0.0, 0.46)
+@export var ladder_position := Vector2(-0.44, 0.48)
 ## Where your body goes while on the ladder (x, z). Inside the deck openings.
-@export var climb_position := Vector2(0.0, 0.1)
+@export var climb_position := Vector2(0.05, 0.48)
 ## How close you must be to the ladder to use it, in metres
 @export var use_radius := 1.2
 ## Where you arrive on each deck, bottom to top. y is the deck height.
 @export var landings: Array[Vector3] = [
-	Vector3(0.0, 0.0, 0.0),
-	Vector3(0.0, 2.6, 1.3),
-	Vector3(-0.7, 5.2, 0.45),
+	Vector3(0.45, 0.0, 0.48),
+	Vector3(0.0, 2.6, 1.6),
+	Vector3(0.0, 5.2, 1.55),
 ]
 @export var climb_speed := 1.5 ## m/s, vertical
 @export var step_speed := 1.5 ## m/s, getting on and off the ladder

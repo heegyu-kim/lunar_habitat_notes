@@ -161,7 +161,8 @@ NASA Artemis Surface Habitat 참조 설계(2인 30일)를 코어로 두고, 4인
 - Forward+이므로 **LightmapGI 베이크**가 최선이다. 정적 지오메트리 전부 베이크, 노트·컨트롤러는 프로브로 받는다. 실별 **ReflectionProbe** 하나씩. SSAO 켬. 볼류메트릭 포그는 엔지니어링에만 아주 약하게.
 - 광원은 "실제 등기구 위치"에 둔다. 천장 라인 조명(길쭉한 Emissive 메시 + OmniLight), 침실 개인등(SpotLight), 팔레트 상태등(작은 Emissive). 창으로 들어오는 태양광이 가장 극적이니 창은 태양 방향(Sun azimuth 슬라이더로 조정 가능)을 고려해 배치.
 - 실시간 그림자는 모듈당 1~2개만. VR 72 Hz 기준.
-- 실내 조명이 자리 잡으면 `LunarExterior`의 `ambient_energy`를 0.65 → 0.2로 내린다.
+- 균일 앰비언트는 없다(하늘이 거의 검어서 조명 없는 방은 캄캄하다). 기본 거주지에는 `LunarHabitat/InteriorLights` 아래 OmniLight 14개(에너지 0.4, 그림자 켬)가 임시로 들어 있으니 에디터에서 옮기거나 바꾼다.
+- 하늘·톤맵·SSR·SSAO·SSIL·SDFGI·글로우는 `assets/environment/lunar_environment.tres`, 태양·지형·지구는 `scenes/lunar_exterior.tscn`에서 고친다.
 
 ### 이름 규칙 (기능 전제 아님, 노트·리포트 가독성)
 `구역 | 실 | 부품` 예: `B | ECLSS | ARS pallet 02`, `C | Crew quarters A | bunk`, `A | L1 | suitport hatch`. 노트에 "on B | ECLSS | ARS pallet 02"로 찍히고 리포트가 부재별로 묶는다.
@@ -169,6 +170,18 @@ NASA Artemis Surface Habitat 참조 설계(2인 30일)를 코어로 두고, 4인
 ---
 
 ## 6. 파이프라인 연동 체크리스트
+
+기본 거주지(`blender/Lunar_Surface_Habitat.blend`)를 고친 뒤에는 저장하고 아래 세 줄을 실행하면 게임에 반영된다.
+뷰포트에서 숨긴 컬렉션·오브젝트는 게임에 들어가지 않는다. 모든 메시에 충돌이 자동으로 붙는다.
+
+```bash
+"C:\Program Files\Blender Foundation\Blender 4.5\blender.exe" -b blender/Lunar_Surface_Habitat.blend --python tools/export_habitat_glb.py
+"C:\Users\user\Downloads\Godot_v4.7.2-stable_win64_console.exe" --headless --xr-mode off --path . --import
+"C:\Users\user\Downloads\Godot_v4.7.2-stable_win64_console.exe" --headless --xr-mode off --path . res://tests/habitat_smoke.tscn --quit-after 900
+```
+
+사다리를 옮기면 `scripts/xr_ladder.gd`·`scripts/desktop_player.gd`의 사다리 위치와 랜딩을, 실 배치를 바꾸면
+`tools/build_default_session.gd`의 ZONES / SOURCES 표와 `scripts/xr_minimap.gd`의 LANDMARKS 표를 고친다.
 
 glb를 넣고 실행한 뒤 Session 탭에서 확인한다.
 

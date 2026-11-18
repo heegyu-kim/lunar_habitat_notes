@@ -18,7 +18,7 @@ var xr_interface: OpenXRInterface
 ## Run the desktop player even when a headset is connected. Useful for typing note text at a desk.
 @export var force_desktop := false
 ## Where the desktop player's feet start (world space). (0, 0, 0) is where the VR origin starts.
-@export var desktop_start := Vector3(0.0, 0.05, 0.0)
+@export var desktop_start := Vector3(0.45, 0.05, 0.48)
 @export var desktop_player_scene: PackedScene = preload("res://scenes/desktop_player.tscn")
 
 ## true once OpenXR is running. Scripts can check Main.is_vr via get_tree().current_scene.
