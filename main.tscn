@@ -762,6 +762,7 @@ material_override = SubResource("ShaderMaterial_074og")
 mesh = SubResource("TextMesh_cegan")
 
 [node name="LunarExterior" parent="." unique_id=668661283 instance=ExtResource("22_lunar")]
+transform = Transform3D(-0.25881904, 0, -0.9659258, 0, 1, 0, 0.9659258, 0, -0.25881904, 0, 0, 0)
 
 [node name="Passthrough" type="Node" parent="." unique_id=1290157622]
 script = ExtResource("6_pass")
@@ -855,7 +856,7 @@ shadow_enabled = true
 omni_range = 4.0
 
 [node name="L2_Shower" type="OmniLight3D" parent="LunarHabitat/InteriorLights" unique_id=1202109286]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.15, 5.413, 0.55)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1501046, 5.413389, 0.5501562)
 light_color = Color(1, 0.96, 0.9, 1)
 light_energy = 0.4
 light_bake_mode = 1

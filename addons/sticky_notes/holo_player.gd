@@ -1,8 +1,8 @@
 class_name HoloPlayer
 extends Node3D
-## Plays a Holonote back as a ghost in world space: a translucent full body (HoloAvatar: head turns,
-## arms reach with IK, hands point), a headset visor, a short pointing ray from each hand, and the
-## author's name. If the avatar model is missing it falls back to a simple head, torso and hands. The voice comes from the
+## Plays a Holonote back as a ghost in world space: a hologram full body (HoloAvatar: always standing,
+## 1.6 m tall, head turns, arms reach with IK, hands point, feet step), a headset, a short pointing ray
+## from each hand, a ring on the floor and the author's name. If the avatar model is missing it falls back to a simple head, torso and hands. The voice comes from the
 ## ghost's head (3D audio), and the motion follows the voice clock so lips and gestures stay in sync.
 ##
 ## Owned by NoteManager (play_holo / stop_holo_playback). Works the same on desktop and in VR.
@@ -14,6 +14,11 @@ const FADE_SEC := 0.3
 const END_HOLD_SEC := 0.4         # keep the last pose briefly before fading out
 const GHOST_ALPHA := 0.55
 const RAY_LEN := 0.6
+const BODY_SHADER := preload("res://addons/sticky_notes/shaders/holo_body.gdshader")
+const DEPTH_SHADER := preload("res://addons/sticky_notes/shaders/holo_depth.gdshader")
+const BASE_SHADER := preload("res://addons/sticky_notes/shaders/holo_base.gdshader")
+const RAY_SHADER := preload("res://addons/sticky_notes/shaders/holo_ray.gdshader")
+const BASE_SIZE := 0.95           # metres across the ring on the floor
 
 var playing: bool = false
 var note_id: String = ""
@@ -31,6 +36,8 @@ var _alpha: float = 0.0
 var _ending: float = -1.0          # time since the motion ended, -1 while still playing
 var _avatar: HoloAvatar = null     # full body, null if the model could not be set up
 var _simple: Array[Node3D] = []    # simple-ghost parts hidden when the avatar works
+var _holo_mats: Array[ShaderMaterial] = []   # hologram shader materials (tint, alpha, floor_y)
+var _base: MeshInstance3D          # ring on the floor under the body
 
 
 func _init() -> void:
@@ -44,9 +51,23 @@ func _init() -> void:
 	skull.scale = Vector3(0.85, 1.0, 1.0)
 	_head.add_child(skull)
 	_simple.append(skull)
-	var visor := _mesh(_box(Vector3(0.17, 0.06, 0.05)), 1.6)
-	visor.position = Vector3(0.0, 0.015, -0.085)
+	# Headset: a rounded bar over the eyes with a brighter lens strip.
+	var visor := MeshInstance3D.new()
+	visor.mesh = _capsule(0.043, 0.2)
+	visor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	visor.material_override = _holo_mat(1.5, 0.7)
+	visor.rotation_degrees = Vector3(0.0, 0.0, 90.0)
+	visor.scale = Vector3(1.0, 1.0, 0.8)
+	visor.position = Vector3(0.0, 0.012, -0.088)
 	_head.add_child(visor)
+	var lens := MeshInstance3D.new()
+	lens.mesh = _capsule(0.016, 0.15)
+	lens.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	lens.material_override = _holo_mat(2.6, 0.95)
+	lens.rotation_degrees = Vector3(0.0, 0.0, 90.0)
+	lens.scale = Vector3(1.0, 1.0, 0.5)
+	lens.position = Vector3(0.0, 0.012, -0.121)
+	_head.add_child(lens)
 
 	_torso = _mesh(_capsule(0.17, 0.62), 0.55)
 	add_child(_torso)
@@ -57,12 +78,32 @@ func _init() -> void:
 		var palm := _mesh(_box(Vector3(0.075, 0.03, 0.11)), 1.0)
 		hand.add_child(palm)
 		_simple.append(palm)
-		var ray := _mesh(_cylinder(0.004, RAY_LEN), 0.6)
+		var ray := MeshInstance3D.new()
+		ray.mesh = _cylinder(0.005, RAY_LEN)
+		ray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var ray_mat := ShaderMaterial.new()
+		ray_mat.shader = RAY_SHADER
+		ray_mat.render_priority = 2
+		_holo_mats.append(ray_mat)
+		ray.material_override = ray_mat
 		ray.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
 		ray.position = Vector3(0.0, 0.0, -0.055 - RAY_LEN * 0.5)
 		hand.add_child(ray)
 		add_child(hand)
 		_hands[side] = hand
+
+	_base = MeshInstance3D.new()
+	var quad := PlaneMesh.new()
+	quad.size = Vector2(BASE_SIZE, BASE_SIZE)
+	_base.mesh = quad
+	_base.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var base_mat := ShaderMaterial.new()
+	base_mat.shader = BASE_SHADER
+	base_mat.render_priority = 1
+	_holo_mats.append(base_mat)
+	_base.material_override = base_mat
+	_base.visible = false
+	add_child(_base)
 
 	_label = Label3D.new()
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -84,8 +125,9 @@ func _ready() -> void:
 	var avatar := HoloAvatar.new()
 	avatar.name = "Avatar"
 	add_child(avatar)
-	if avatar.setup(_ghost_mat(0.9, 0.85)):
+	if avatar.setup(_holo_mat(1.0, 0.34)):
 		_avatar = avatar
+		_base.visible = true
 		for n in _simple:
 			n.visible = false
 	else:
@@ -103,6 +145,11 @@ func play(note: NoteData, m: HoloMotion) -> bool:
 	for mat in _mats:
 		var k: float = mat.get_meta("k", 1.0)
 		mat.albedo_color = Color(c.r * k, c.g * k, c.b * k, 0.0)
+	# The hologram keeps more of the note type's own colour than the simple ghost (its rim adds the light).
+	var hc := NoteData.type_color(note.type).lightened(0.08)
+	for hm in _holo_mats:
+		hm.set_shader_parameter("tint", Vector3(hc.r, hc.g, hc.b))
+		hm.set_shader_parameter("alpha", 0.0)
 	_label.text = "%s · %s" % [note.author if note.author != "" else "Guest", note.role_name()]
 	_label.modulate = Color(1, 1, 1, 0)
 	_label.outline_modulate = Color(0, 0, 0, 0)
@@ -203,31 +250,56 @@ func _process(delta: float) -> void:
 func _apply_pose(delta: float, snap: bool = false) -> void:
 	var tt := minf(t, motion.duration)
 	var head := motion.pose_at("head", tt)
-	_head.global_transform = head
+	# The full body always stands at its own height, so everything recorded moves up or down with it.
+	var lift := Vector3.ZERO
 	if _avatar != null:
 		var hands := {}
 		for side in ["left", "right"]:
 			hands[side] = motion.pose_at(side, tt) if motion.valid_at(side, tt) else null
 		_avatar.drive(head, hands, delta, snap)
+		lift = Vector3.UP * _avatar.lift()
+	_head.global_transform = Transform3D(head.basis, head.origin + lift)
 	# Torso: under the head, upright, turned with the head's yaw only.
 	var fwd := -head.basis.z
 	fwd.y = 0.0
 	var yaw := atan2(-fwd.x, -fwd.z) if fwd.length() > 0.01 else 0.0
 	_torso.global_transform = Transform3D(Basis(Vector3.UP, yaw), head.origin + Vector3(0.0, -0.5, 0.0) + Basis(Vector3.UP, yaw) * Vector3(0, 0, 0.05))
-	_label.global_position = head.origin + Vector3(0.0, 0.26, 0.0)
+	_label.global_position = head.origin + lift + Vector3(0.0, 0.26, 0.0)
 	for side in _hands:
 		var hand: Node3D = _hands[side]
 		if not motion.has_track(side):
 			continue
-		hand.global_transform = motion.pose_at(side, tt)
+		var hp := motion.pose_at(side, tt)
+		hand.global_transform = Transform3D(hp.basis, hp.origin + lift)
 		hand.visible = motion.valid_at(side, tt)
 	for mat in _mats:
 		mat.albedo_color.a = GHOST_ALPHA * _alpha * float(mat.get_meta("a", 1.0))
+	var floor_y := -1000.0
+	if _avatar != null:
+		floor_y = _avatar.floor_height()
+		var gp := _avatar.ground_point()
+		_base.global_transform = Transform3D(Basis.IDENTITY, gp + Vector3(0.0, 0.012, 0.0))
+	for hm in _holo_mats:
+		hm.set_shader_parameter("alpha", _alpha)
+		hm.set_shader_parameter("floor_y", floor_y)
 	_label.modulate.a = _alpha
 	_label.outline_modulate.a = _alpha
 
 
 # ---------------- mesh helpers ----------------
+
+## Hologram material: a depth-only pass, then the colour pass (see the two shaders).
+func _holo_mat(brightness: float, core_alpha: float) -> ShaderMaterial:
+	var color := ShaderMaterial.new()
+	color.shader = BODY_SHADER
+	color.render_priority = 1
+	color.set_shader_parameter("brightness", brightness)
+	color.set_shader_parameter("core_alpha", core_alpha)
+	_holo_mats.append(color)
+	var depth := ShaderMaterial.new()
+	depth.shader = DEPTH_SHADER
+	depth.next_pass = color
+	return depth
 
 func _mesh(m: Mesh, brightness: float) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()

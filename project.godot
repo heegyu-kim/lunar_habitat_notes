@@ -41,7 +41,7 @@ project/assembly_name="lunar_habitat_notes"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/open_godot_mcp/plugin.cfg")
+enabled=PackedStringArray("res://addons/open_godot_mcp/plugin.cfg", "res://addons/quest_bake/plugin.cfg")
 
 [input]
 
@@ -138,6 +138,7 @@ ladder_down={
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
 lights_and_shadows/directional_shadow/size.mobile=4096
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
@@ -147,11 +148,12 @@ environment/ssil/quality=3
 anti_aliasing/quality/msaa_3d=2
 global_illumination/sdfgi/probe_ray_count=3
 global_illumination/sdfgi/frames_to_update_lights=1
-anti_aliasing/quality/screen_space_aa=2
 
 [xr]
 
 openxr/enabled=true
+openxr/foveation_level=2
+openxr/foveation_dynamic=true
 openxr/startup_alert=false
 openxr/extensions/hand_tracking=true
 openxr/extensions/hand_tracking_unobstructed_data_source=true
