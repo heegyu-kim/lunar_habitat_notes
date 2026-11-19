@@ -37,8 +37,9 @@ The bake took 16 seconds on an RTX 5070 Ti (213 meshes). The plugin is `addons/q
 
 ## Sounds
 
-`assets/audio/*.wav` is git-ignored (licensed sound library), so a fresh clone has no sound until
-the six files are put back (`tools/prepare_habitat_audio.py`). The APK built here contains them.
+The six sounds in `assets/audio/` (four ambience loops, the opening sting, the note cue) are part of
+this branch, so a fresh clone has sound without any extra step. On the other branches they are
+git-ignored and prepared locally with `tools/prepare_habitat_audio.py`.
 
 ## Building the APK
 

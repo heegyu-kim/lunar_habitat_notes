@@ -27,9 +27,8 @@ desktop.ini
 /tools/ffmpeg
 ffmpeg-*.log
 
-# Local sound-library assets: prepare with tools/prepare_habitat_audio.py.
-/assets/audio/*.wav
-/assets/audio/*.wav.import
+# The six habitat sounds in assets/audio/ are part of this branch (they are still left out of the
+# other branches, where tools/prepare_habitat_audio.py prepares them from local copies).
 
 # Blender working files converted from the glb models (tools/glb_to_blend_fbx.py)
 /blender/
