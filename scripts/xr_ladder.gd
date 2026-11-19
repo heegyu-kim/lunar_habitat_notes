@@ -1,4 +1,4 @@
-# Ladder climbing. Stand near the ladder and press A to climb up a deck, X to climb down.
+# Ladder climbing. Stand near the ladder and press Y or B to climb up a deck, X or A to climb down.
 # Moves the XROrigin3D to the ladder, up/down it, then off onto the landing.
 # Floor collision is turned off while climbing so you pass through the decks.
 #############################################
@@ -10,8 +10,10 @@ class_name XRLadder
 ## Kill switch
 @export var enabled := true
 
-## Button action from the action map. A on the right controller, X on the left.
-@export var button_action := "ax_button"
+## Climbs up: Y (left) and B (right).
+@export var up_action := "by_button"
+## Climbs down: X (left) and A (right).
+@export var down_action := "ax_button"
 
 ## Group holding the floor StaticBody3Ds to turn off while climbing
 @export var floor_group := "habitat_floor"
@@ -19,9 +21,8 @@ class_name XRLadder
 @export_group("Nodes")
 ## Head
 @export_node_path("XRCamera3D") var camera: NodePath
-## Controller whose button climbs up
+## The two controllers (either one's buttons climb). Named up/down from when one hand went up.
 @export_node_path("XRController3D") var up_controller: NodePath
-## Controller whose button climbs down
 @export_node_path("XRController3D") var down_controller: NodePath
 ## Joystick locomotion, paused while climbing
 @export_node_path("Node3D") var movement: NodePath
@@ -50,6 +51,13 @@ var _movement: Node3D = null
 
 var _climbing := false
 
+## First time you come near the ladder (each app launch), a popup says which buttons climb.
+@export var show_hint := true
+const HINT_SECONDS := 7.0
+var _hint: Label3D = null
+var _hint_left := 0.0
+var _hinted := false
+
 
 func _ready() -> void:
 	_origin = get_parent() as XROrigin3D
@@ -60,19 +68,71 @@ func _ready() -> void:
 	_camera = get_node_or_null(camera) as XRCamera3D
 	_movement = get_node_or_null(movement) as Node3D
 
-	var up := get_node_or_null(up_controller) as XRController3D
-	var down := get_node_or_null(down_controller) as XRController3D
-	if up:
-		up.button_pressed.connect(_on_button_pressed.bind(1))
-	if down:
-		down.button_pressed.connect(_on_button_pressed.bind(-1))
+	add_to_group("xr_ladder")
+	for path in [up_controller, down_controller]:
+		var c := get_node_or_null(path) as XRController3D
+		if c:
+			c.button_pressed.connect(_on_button_pressed)
 
 
-func _on_button_pressed(action: StringName, step: int) -> void:
-	if not enabled or _climbing or action != button_action or _camera == null:
+## true when Y / B would climb (near the ladder, or on an imported model). B toggles passthrough
+## everywhere else; XRTogglePassthrough asks this first.
+func uses_buttons() -> bool:
+	if not enabled or _camera == null:
+		return false
+	if NoteManager.has_model():
+		return true
+	var head := Vector2(_camera.global_position.x, _camera.global_position.z)
+	return head.distance_to(ladder_position) <= use_radius
+
+
+func _process(delta: float) -> void:
+	if not _hinted and show_hint and uses_buttons():
+		_hinted = true
+		_show_hint()
+	if _hint == null or not _hint.visible:
+		return
+	_hint_left -= delta
+	# Float 0.9 m in front of the head, a little below eye level; follow the head gently.
+	var fwd := -_camera.global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3.FORWARD
+	var want := _camera.global_position + fwd * 0.9 + Vector3.DOWN * 0.12
+	_hint.global_position = _hint.global_position.lerp(want, 1.0 - exp(-6.0 * delta))
+	_hint.modulate.a = clampf(_hint_left / 0.5, 0.0, 1.0)
+	_hint.outline_modulate.a = _hint.modulate.a
+	if _hint_left <= 0.0:
+		_hint.visible = false
+
+
+func _show_hint() -> void:
+	if _hint == null:
+		_hint = Label3D.new()
+		_hint.name = "LadderHint"
+		_hint.text = "LADDER\nY or B  ▲  climb up\nX or A  ▼  climb down"
+		_hint.font_size = 44
+		_hint.pixel_size = 0.0008
+		_hint.outline_size = 12
+		_hint.outline_modulate = Color(0, 0, 0, 0.85)
+		_hint.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_hint.no_depth_test = true
+		_hint.render_priority = 50
+		_hint.fixed_size = false
+		get_tree().current_scene.add_child(_hint)
+	var fwd := -_camera.global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3.FORWARD
+	_hint.global_position = _camera.global_position + fwd * 0.9 + Vector3.DOWN * 0.12
+	_hint_left = HINT_SECONDS
+	_hint.visible = true
+
+
+func _on_button_pressed(action: StringName) -> void:
+	var step := 1 if action == up_action else (-1 if action == down_action else 0)
+	if not enabled or _climbing or step == 0 or _camera == null:
 		return
 
-	# An imported model (space-setup pipeline) has no ladder: A / X step straight to the next
+	# An imported model (space-setup pipeline) has no ladder: the buttons step straight to the next
 	# floor's landing, keeping your place in the play space.
 	if NoteManager.has_model():
 		var lands: Array[Vector3] = NoteManager.floor_landings()
@@ -97,6 +157,8 @@ func _on_button_pressed(action: StringName, step: int) -> void:
 
 func _climb(landing: Vector3) -> void:
 	_climbing = true
+	if _hint != null and _hint_left > 0.5:
+		_hint_left = 0.5   # fade out: they found the buttons
 	_set_floors_enabled(false)
 	if _movement:
 		_movement.set("enabled", false)

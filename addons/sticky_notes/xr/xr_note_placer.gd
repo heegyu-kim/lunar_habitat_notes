@@ -10,7 +10,8 @@ extends Node
 ##   보드를 겨누고 트리거     버튼 클릭
 ##   오른쪽 스틱 위아래       보드 스크롤
 ##
-## A / B / X / Y / 그립은 쓰지 않는다. 보드는 왼손에 항상 떠 있다.
+## Grip (either hand, with nothing to grab in reach) hides / shows the board on the left wrist.
+## A / B / X / Y are the ladder (and B passthrough), not used here.
 
 const RAY_LENGTH := 6.0
 const HOLD_TO_RECORD := 3.0
@@ -35,6 +36,8 @@ var _aimed: StickyNote = null
 var _busy: bool = false
 
 var _trigger_prev: bool = false
+## Hidden with the grip button. Kept across theater playback.
+var board_hidden: bool = false
 var _hold_note: StickyNote = null      # 트리거를 누르기 시작했을 때 겨누던 노트
 var _hold_t: float = 0.0
 var _hold_fired: bool = false          # 이번 홀드로 녹화를 시작했는가
@@ -49,11 +52,25 @@ func _ready() -> void:
 	board.panel.play_requested.connect(_on_play_requested)
 	board.panel.closed.connect(_on_panel_closed)
 	board.identity.done.connect(_on_identity_done)
+	for c in [left, right]:
+		(c as XRController3D).button_pressed.connect(_on_grip.bind(c))
 	board.visible = true
 	if NoteManager.identity_set:
 		board.panel.open_tab(VRPanel.Tab.NOTE)
 	else:
 		call_deferred("_show_identity")
+
+
+## Grip: toggle the board, unless that hand is grabbing (or about to grab) a prop.
+func _on_grip(action: StringName, hand: XRController3D) -> void:
+	if action != &"grip_click":
+		return
+	for g in hand.get_children():
+		if g.has_method("is_busy") and g.is_busy():
+			return
+	board_hidden = not board_hidden
+	board.visible = not board_hidden
+	hand.trigger_haptic_pulse("haptic", 0.0, 0.25, 0.05, 0.0)
 
 
 func _show_identity() -> void:
@@ -154,7 +171,7 @@ func _process(delta: float) -> void:
 			theater.exit()
 		return
 	_ray.visible = true
-	board.visible = true
+	board.visible = not board_hidden
 
 	# ---- 보드: 포인터 → 마우스 ----
 	if kind == "board":

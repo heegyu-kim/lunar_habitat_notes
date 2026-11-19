@@ -1,6 +1,6 @@
 ## TEMPLATE FILE ############################
 # Joystick locomotion. Left stick to move, right stick to rotate.
-# Turning is smooth by default (push further = turn faster). Set turn_mode to Snap for 30° steps.
+# Turning snaps 30° per flick by default (comfortable in VR). Set turn_mode to Smooth for continuous turning.
 # Only the right stick's left/right is used here; its up/down is the wrist board scroll (XRNotePlacer).
 #############################################
 
@@ -25,10 +25,12 @@ class_name XRMovement
 @export_group("Parameters")
 @export var move_speed := 2.0 ## m/s
 ## Smooth: continuous rotation while the stick is held. Snap: snap_degrees per flick.
-@export_enum("Smooth", "Snap") var turn_mode := 0
+@export_enum("Smooth", "Snap") var turn_mode := 1
 ## Smooth turn: degrees per second at full stick deflection
 @export var turn_speed_degrees := 90.0
 @export var snap_degrees := 30.0
+## Snap turn: how far left/right the stick must be pushed to turn. Firm, so board scrolling never turns you.
+@export_range(0.3, 0.95) var snap_threshold := 0.6
 @export_range(0.0, 0.9) var deadzone := 0.2 ## for stick drift
 ## Right stick: ignore left/right below this so scrolling the board (up/down) does not turn you
 @export_range(0.0, 0.9) var turn_deadzone := 0.3
@@ -118,12 +120,12 @@ func _snap_turn() -> void:
 
 	var stick := _turn_controller.get_vector2(stick_action)
 
-	# Allow a turn when the stick is in the deadzone.
-	if absf(stick.x) < deadzone:
+	# Re-arm once the stick is back near the centre; turn on a firm push.
+	if absf(stick.x) < turn_deadzone:
 		_can_turn = true
 		return
 
-	if not _can_turn:
+	if not _can_turn or absf(stick.x) < snap_threshold:
 		return
 	_can_turn = false # This is where a turn will happen. We flip this flag to stop another one
 

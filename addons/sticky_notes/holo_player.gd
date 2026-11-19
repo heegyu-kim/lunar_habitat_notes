@@ -15,7 +15,6 @@ const END_HOLD_SEC := 0.4         # keep the last pose briefly before fading out
 const GHOST_ALPHA := 0.55
 const RAY_LEN := 0.6
 const BODY_SHADER := preload("res://addons/sticky_notes/shaders/holo_body.gdshader")
-const DEPTH_SHADER := preload("res://addons/sticky_notes/shaders/holo_depth.gdshader")
 const BASE_SHADER := preload("res://addons/sticky_notes/shaders/holo_base.gdshader")
 const RAY_SHADER := preload("res://addons/sticky_notes/shaders/holo_ray.gdshader")
 const BASE_SIZE := 0.95           # metres across the ring on the floor
@@ -288,7 +287,11 @@ func _apply_pose(delta: float, snap: bool = false) -> void:
 
 # ---------------- mesh helpers ----------------
 
-## Hologram material: a depth-only pass, then the colour pass (see the two shaders).
+## Hologram material: the colour pass only.
+## NOT the depth-only pre-pass (holo_depth.gdshader as the first pass with this as next_pass): on the
+## Quest 3, that pass on the skinned body with foveated rendering (VRS) faults the GPU and crashes
+## the app ("Vulkan device was lost") within seconds of playback. Found with an on-device probe,
+## 2026-11-18. Cost: where an arm crosses the chest, the chest shows faintly through it.
 func _holo_mat(brightness: float, core_alpha: float) -> ShaderMaterial:
 	var color := ShaderMaterial.new()
 	color.shader = BODY_SHADER
@@ -296,10 +299,7 @@ func _holo_mat(brightness: float, core_alpha: float) -> ShaderMaterial:
 	color.set_shader_parameter("brightness", brightness)
 	color.set_shader_parameter("core_alpha", core_alpha)
 	_holo_mats.append(color)
-	var depth := ShaderMaterial.new()
-	depth.shader = DEPTH_SHADER
-	depth.next_pass = color
-	return depth
+	return color
 
 func _mesh(m: Mesh, brightness: float) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()

@@ -74,6 +74,11 @@ func _physics_process(delta: float) -> void:
 	_last_position = _held.global_position
 
 
+## true while holding something, or when the grip would pick something up.
+func is_busy() -> bool:
+	return _held != null or _nearest_body() != null
+
+
 func _grab() -> void:
 	if _held != null:
 		return

@@ -95,7 +95,8 @@ func _setup() -> void:
 	theater.name = "ClipTheater"
 	add_child(theater)
 	theater.attach(_camera, origin)
-	theater.started.connect(_set_locomotion.bind(false))
+	# Video playback holds you at the author's eye point; a holonote lets you walk around the ghost.
+	theater.started.connect(func() -> void: _set_locomotion(theater.is_holo()))
 	theater.finished.connect(_set_locomotion.bind(true))
 
 	# ---- right-hand pointer ----

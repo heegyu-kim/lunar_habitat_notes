@@ -83,6 +83,11 @@ func _init() -> void:
 	add_child(_audio)
 
 
+## true while a holonote plays (you can walk around the ghost; video playback keeps you still).
+func is_holo() -> bool:
+	return _holo
+
+
 func attach(cam: XRCamera3D, org: XROrigin3D) -> void:
 	camera = cam
 	origin = org
